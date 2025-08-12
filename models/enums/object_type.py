@@ -4,4 +4,4 @@ class ObjectType(str, PyEnum):
     USER = "user"
     ADMIN = "admin"
     MISSION = "mission"
-    PLATFORM = "platforms"
+    PLATFORM = "platform"

@@ -11,3 +11,4 @@ class User(BaseObject):
     def __init__(self, **data):
         data["id"] = data.get("id", uuid4())
         data["type"] = ObjectType.USER
+        super().__init__(**data)

@@ -4,5 +4,5 @@ from uuid import uuid4, UUID
 from models.enums.object_type import ObjectType
 
 class BaseObject(ABC, BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    id: UUID
     type: ObjectType 

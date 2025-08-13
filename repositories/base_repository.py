@@ -7,21 +7,21 @@ T = TypeVar("T")
 class BaseRepository(ABC, Generic[T]):
     
     @abstractmethod
-    def get_all(self) -> List[T]:
+    async def get_all(self) -> List[T]:
         ...
         
     @abstractmethod
-    def get_by_id(self, item_id: UUID) -> T:
+    async def get_by_id(self, item_id: UUID) -> T:
         ...
         
     @abstractmethod
-    def add_item(self, item: T) -> T:
+    async def add_item(self, item: T) -> T:
         ...
     
     @abstractmethod
-    def delete_item(self, item_id: UUID) -> bool:
+    async def delete_item(self, item_id: UUID) -> bool:
         ...
         
     @abstractmethod
-    def update_item(self, item_id: UUID, item: T) -> T:
+    async def update_item(self, item_id: UUID, item: T) -> T:
         ...

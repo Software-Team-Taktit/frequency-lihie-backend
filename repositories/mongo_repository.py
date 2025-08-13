@@ -15,6 +15,11 @@ class MongoRepository(BaseRepository[T], Generic[T]):
         docs = await cursor.to_list(length=None)
         return [self.model_cls(**doc) for doc in docs]
     
+    async def get_by_id(self, item_id: UUID) -> T:
+        doc = await self.collection.find_one({"id": str(item_id)})
+        if not doc:
+            return None
+        return self.model_cls(**doc)
 
     async def add_item(self, item: T) -> T:
         await self.collection.insert_one(item.model_dump())
@@ -27,5 +32,5 @@ class MongoRepository(BaseRepository[T], Generic[T]):
     async def update_item(self, item_id: UUID, item: T) -> T:
         result = await self.collection.replace_one({"id": str(item_id)}, item.model_dump())
         if result.matched_count == 0:
-            raise ValueError(f"Item with id {item_id} not found")
+            return None
         return item

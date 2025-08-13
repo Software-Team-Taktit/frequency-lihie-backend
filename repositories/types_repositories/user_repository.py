@@ -5,6 +5,7 @@ from repositories.base_repository import BaseRepository
 from db.mongo import db
 
 class UserRepository(BaseRepository[User]):
+    
     def __init__(self):
         self.collection = db["users"]
 
@@ -12,3 +13,11 @@ class UserRepository(BaseRepository[User]):
         cursor = self.collection.find({})
         users = await cursor.to_list(length=None)
         return [User(**u) for u in users]
+    
+    async def get_by_id(self, item_id):
+        user_dict = await self.collection.find_one({"id": str(item_id)})
+        if not user_dict:
+            return None
+        return User(**user_dict)
+    
+    

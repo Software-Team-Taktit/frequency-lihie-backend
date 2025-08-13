@@ -1,6 +1,7 @@
-from repositories.types_repositories.user_repository import UserRepository
+from repositories.mongo_repository import MongoRepository
+from db.mongo import db
+from models.domain.types.users.admin import Admin
 
-class AdminRepository(UserRepository):
+class AdminRepository(MongoRepository[Admin]):
     def __init__(self):
-        super().__init__()
-        self.collection = self.collection.database["admins"]
+        super().__init__(collection=db["admins"], model_cls=Admin)

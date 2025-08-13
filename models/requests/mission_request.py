@@ -6,3 +6,8 @@ class MissionCreateRequest(BaseModel):
     coordinate: Coordinate
     enviroment_type: str
     platform_id: UUID
+    
+class MissionUpdateRequest(BaseModel):
+    coordinate: Coordinate
+    enviroment_type: str
+    platform_id: UUID

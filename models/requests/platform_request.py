@@ -6,3 +6,10 @@ class PlatformCreateRequest(BaseModel):
     bw_khz: float
     tx_power_dbm: float
     antenna_height_m: float
+    
+class PlatformUpdateRequest(BaseModel):
+    name: str
+    frequency_mhz: float
+    bw_khz: float
+    tx_power_dbm: float
+    antenna_height_m: float

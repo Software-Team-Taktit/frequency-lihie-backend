@@ -14,10 +14,18 @@ class UserRepository(BaseRepository[User]):
         users = await cursor.to_list(length=None)
         return [User(**u) for u in users]
     
-    async def get_by_id(self, item_id):
+    async def get_by_id(self, item_id) -> User:
         user_dict = await self.collection.find_one({"id": str(item_id)})
         if not user_dict:
             return None
         return User(**user_dict)
+    
+    async def add_item(self, item: User) -> User:
+        await self.collection.insert_one(item.model_dump())
+        return item
+    
+    async def delete_item(self, item_id: UUID) -> bool:
+        result = await self.collection.delete_one({"id": str(item_id)})
+        return result.deleted_count > 0
     
     

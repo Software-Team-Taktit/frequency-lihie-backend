@@ -6,7 +6,7 @@ class UserCreateRequest(BaseModel):
     last_name: str
     unit: str
     
-class UpdateUserRequest(BaseModel):
+class UserUpdateRequest(BaseModel):
     personal_id: str
     first_name: str
     last_name: str

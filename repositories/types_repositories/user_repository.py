@@ -28,4 +28,8 @@ class UserRepository(BaseRepository[User]):
         result = await self.collection.delete_one({"id": str(item_id)})
         return result.deleted_count > 0
     
-    
+    async def update_item(self, item_id: UUID, item: User) -> User:
+        result = await self.collection.replace_one({"id": str(item_id)})
+        if result.matched_count > 0:
+            return None
+        return item

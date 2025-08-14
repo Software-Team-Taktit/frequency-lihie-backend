@@ -1,4 +1,3 @@
-from fastapi import Depends
 from ..base_crud_router import BaseCrudRouter
 from models.domain.types.users.user import User
 from models.requests.user_request import UserCreateRequest, UserUpdateRequest

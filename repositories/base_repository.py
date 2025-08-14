@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from typing import Generic, TypeVar, List
-from uuid import uuid4, UUID
 
 T = TypeVar("T")
 
@@ -11,7 +10,7 @@ class BaseRepository(ABC, Generic[T]):
         ...
         
     @abstractmethod
-    async def get_by_id(self, item_id: UUID) -> T:
+    async def get_by_id(self, item_id: str) -> T:
         ...
         
     @abstractmethod
@@ -19,9 +18,9 @@ class BaseRepository(ABC, Generic[T]):
         ...
     
     @abstractmethod
-    async def delete_item(self, item_id: UUID) -> bool:
+    async def delete_item(self, item_id: str) -> bool:
         ...
         
     @abstractmethod
-    async def update_item(self, item_id: UUID, item: T) -> T:
+    async def update_item(self, item_id: str, item: T) -> T:
         ...

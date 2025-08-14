@@ -1,7 +1,7 @@
-from db.mongo import db
+from db.mongo import get_db
 from models.domain.types.mission import Mission
 from repositories.mongo_repository import MongoRepository
 
 class MissionRepository(MongoRepository[Mission]):
     def __init__(self):
-        super().__init__(collection=db["missions"], model_cls=Mission)
+        super().__init__(collection=get_db()["missions"], model_cls=Mission)

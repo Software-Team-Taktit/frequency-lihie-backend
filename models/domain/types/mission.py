@@ -6,7 +6,7 @@ from models.helpers.coordinate import Coordinate
 class Mission(BaseObject):
     coordinate: Coordinate
     enviroment_type: str
-    platform_id: UUID
+    platform_id: str
     
     def __init__(self, **data):
         data["id"] = data.get("id", str(uuid4()))

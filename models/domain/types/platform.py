@@ -10,6 +10,6 @@ class Platform(BaseObject):
     antenna_height_m: float
     
     def __init__(self, **data):
-        data["id"] = data.get("id", uuid4())
+        data["id"] = data.get("id", str(uuid4()))
         data["type"] = ObjectType.PLATFORM
         super().__init__(**data)

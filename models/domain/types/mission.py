@@ -9,6 +9,6 @@ class Mission(BaseObject):
     platform_id: UUID
     
     def __init__(self, **data):
-        data["id"] = data.get("id", uuid4())
+        data["id"] = data.get("id", str(uuid4()))
         data["type"] = ObjectType.MISSION
         super().__init__(**data)

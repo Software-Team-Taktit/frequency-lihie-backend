@@ -9,6 +9,6 @@ class User(BaseObject):
     unit: str
     
     def __init__(self, **data):
-        data["id"] = data.get("id", uuid4())
+        data["id"] = data["personal_id"]
         data["type"] = ObjectType.USER
         super().__init__(**data)

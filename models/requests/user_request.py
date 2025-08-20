@@ -22,3 +22,12 @@ class UserCreateRequest(BaseModel):
     
 class UserUpdateRequest(UserCreateRequest):
     pass
+
+class UserLogInRequest(BaseModel):
+    personal_id: str = Field(
+        ...,
+        min_length=7,
+        max_length=7,
+        pattern=r'^\d{7}$',
+        description="מספר אישי חייב להיות 7 ספרות בדיוק"
+    )

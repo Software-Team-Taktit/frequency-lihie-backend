@@ -7,3 +7,6 @@ class UserRepository(MongoRepository[User]):
     def __init__(self):
         super().__init__(collection=get_db()["users"], model_cls=User)
         
+    async def get_by_personal_id(self, personal_id:str) -> User:
+        doc = await self.collection.find_one({"personal_id": personal_id})
+        return User(**doc) if doc else None

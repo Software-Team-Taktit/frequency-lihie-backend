@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from db.mongo import connect_to_mongo, close_mongo_connection, get_db
-from routers.types_routers.user_router import user_router
+from routers.types_routers.login_logout_router import user_router
 from routers.types_routers.admin_router import admin_router
 from routers.types_routers.platform_router import platform_router
 from routers.types_routers.mission_router import mission_router

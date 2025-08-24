@@ -1,18 +1,31 @@
 from fastapi import FastAPI
-from db.mongo import connect_to_mongo, close_mongo_connection
+from db.mongo import connect_to_mongo, close_mongo_connection, get_db
 from routers.types_routers.user_router import user_router
 from routers.types_routers.admin_router import admin_router
 from routers.types_routers.platform_router import platform_router
 from routers.types_routers.mission_router import mission_router
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Merhavim Backend",
     version="0.1.0"
 )
 
+origins = ["http://localhost:5173"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,      
+    allow_credentials=True,    
+    allow_methods=["*"],       
+    allow_headers=["*"],      
+)
+
 @app.on_event("startup")
 async def startup_event():
     await connect_to_mongo()
+    db = get_db()
+    await db["users"].create_index("id", unique=True)
     
 @app.on_event("shutdown")
 async def shutdown_event():

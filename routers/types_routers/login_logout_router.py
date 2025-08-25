@@ -47,5 +47,3 @@ async def logout(
 async def me(current_user: User = Depends(get_current_user)):
     return current_user.model_dump()
 
-
-user_router.include_router(user_crud_router)

@@ -1,4 +1,4 @@
-from deps.heb_freq_phrase import _digits_to_hebrew, freq_to_phrase_he
+from deps.heb_freq_phrase import frequency_to_phrase_he
 import os, json, sys, pika, soundfile as sf, torch
 from transformers import AutoProcessor, VitsModel
 
@@ -28,7 +28,7 @@ def main():
             freq_hz = float(msg["freq_hz"])
             style = msg.get("style", "digits")
             rel = msg["rel_path"]
-            text = freq_to_phrase_he(freq_hz, style)
+            text = frequency_to_phrase_he(freq_hz, style)
             
             out_path = os.path.join(STATIC_DIR, rel)
             ensure_dirs(out_path)

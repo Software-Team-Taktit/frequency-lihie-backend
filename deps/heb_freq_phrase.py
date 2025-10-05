@@ -1,15 +1,39 @@
-DIGITS = {'0': 'אפס', '1':'','2':'', '3': '', '4': '', '5': '', '6':'', '7': '', '8':'', '9':''}
+# deps/heb_freq_phrase.py
 
-def _digits_to_hebrew(s: str) -> str:
-    return ''.join('נקודה' if ch == '.' else DIGITS.get(ch, ch) for ch in s)
+DIGITS = {
+    '0': 'אפס',
+    '1': 'אחד',
+    '2': 'שתיים',
+    '3': 'שלוש',
+    '4': 'ארבע',
+    '5': 'חמש',
+    '6': 'שש',
+    '7': 'שבע',
+    '8': 'שמונה',
+    '9': 'תשע',
+}
 
-def freq_to_phrase_he(freq_hz: float, style: str = "digits") -> str:
+def _digits_to_he(s: str) -> str:
+    # מחזיר ספרות מופרדות ברווחים, עם "נקודה" לעשרונית
+    return ' '.join('נקודה' if ch == '.' else DIGITS.get(ch, ch) for ch in s)
+
+def frequency_to_phrase_he(freq_hz: float, style: str = "digits") -> str:
+    # המרה ליחידות קריאות
     if freq_hz >= 1e6:
-        val = round(freq_hz/1e6, 3); unit = 'מגה-הרץ'
+        val = round(freq_hz / 1e6, 3)
+        unit = 'מגה־הרץ'
     elif freq_hz >= 1e3:
-        val = round(freq_hz/1e3, 1); unit = 'קילו-הרץ'
+        val = round(freq_hz / 1e3, 1)
+        unit = 'קילו־הרץ'
     else:
-        val = int(round(freq_hz)); unit = 'הרץ'
+        val = int(round(freq_hz))
+        unit = 'הרץ'
+
+    # הפיכת המספר למחרוזת "ספרות"
     s = f"{val}".rstrip('0').rstrip('.') if isinstance(val, float) else f"{val}"
-    spoken = _digits_to_hebrew(s) if style == "digits" else s
+    spoken = _digits_to_he(s) if style == "digits" else s
     return f"עברו לתדר {spoken} {unit}"
+
+# תאימות לאחור לשם הישן
+def freq_to_phrase_he(freq_hz: float, style: str = "digits") -> str:
+    return frequency_to_phrase_he(freq_hz, style)

@@ -9,6 +9,7 @@ venv/
 .venv/
 env/
 vtts/                 # ← ה-venv של ה-TTS
+.vtts/
 
 # Build / dist artifacts
 build/

@@ -1,4 +1,6 @@
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from db.mongo import connect_to_mongo, close_mongo_connection, get_db
 from routers.types_routers.login_logout_router import user_router
 from routers.types_routers.admin_router import admin_router
@@ -11,6 +13,9 @@ app = FastAPI(
     title="Merhavim Backend",
     version="0.1.0"
 )
+
+os.makedirs("static/tts", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = ["http://localhost:5173"]
 

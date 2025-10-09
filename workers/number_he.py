@@ -15,13 +15,13 @@ TENS = ["", "עשר", "עשרים", "שלושים", "ארבעים", "חמישי�
 THOUSANDS = ["", "", "", "שלושת", "ארבעת" , "חמשת", "ששת", "שבעת", "שמונת", "תשעת"]
 
 def teens(n: int) -> str:
-    return f"{DIGITS[n-11]} עשרה"
+    return f"{DIGITS[str(n-10)]} עשרה"
 
 def two_digits(n: int) -> str:
     if n == 0:
         return ""
     if n < 10:
-        return DIGITS[n]
+        return DIGITS[str(n)]
     if 10 < n < 20:
         return teens(n)
     if n == 10:
@@ -34,7 +34,7 @@ def hundreds(n: int) -> str:
     h, r = divmod(n, 100)
     if h == 1: head = "מאה"
     elif h == 2: head = "מאתיים"
-    else: head = f"{DIGITS[h]} מאות"
+    else: head = f"{DIGITS[str(h)]} מאות"
     return head if r == 0 else f"{head} {two_digits(r)}"
 
 def thousands(k: int) -> str:

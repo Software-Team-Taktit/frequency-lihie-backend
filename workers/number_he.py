@@ -55,3 +55,14 @@ def int_to_hebrew(n: int) -> str:
     if r:
         parts.append(hundreds(r))
     return " ".join(parts)
+
+def number_to_heb_string(s: str) -> str:
+    if "." in s:
+        whole, frac = s.split(".", 1)
+        whole_he = int_to_hebrew(int(whole)) if whole else "אפס"
+        frac = frac.rstrip('0')
+        if frac:
+            frac_spoken = ' '.join(DIGITS.get(ch, ch) for ch in frac)
+            return f"{whole_he} נקודה {frac_spoken}"
+        return whole_he
+    return int_to_hebrew(int(s))

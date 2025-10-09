@@ -3,10 +3,8 @@ import json, uuid, os, pika
 QUEUE    = os.getenv("TTS_QUEUE", "tts_he_mms")
 RMQ_HOST = os.getenv("RABBIT_HOST", "localhost")
 
-def publish_tts_freq(freq_hz: float, *, style: str = "digits", rel_path: str | None = None) -> dict:
-    file_id = uuid.uuid4().hex
-    rel_path = rel_path or f"tts/{file_id}.wav"
-    msg = {"type":"announce_frequency", "freq_hz": float(freq_hz), "style": style, "rel_path": rel_path}
+def publish_tts_freq(is_freq: bool, freq_hz: float) -> dict:
+    msg = {"isFreq": is_freq, "freq_hz": freq_hz}
     
     conn = pika.BlockingConnection(pika.ConnectionParameters(RMQ_HOST))
     ch = conn.channel()
@@ -18,4 +16,3 @@ def publish_tts_freq(freq_hz: float, *, style: str = "digits", rel_path: str | N
         properties=pika.BasicProperties(delivery_mode=2),
     )
     conn.close()
-    return {"id": file_id, "rel_path": rel_path, "url": f"/static/{rel_path}"}

@@ -1,4 +1,4 @@
-from deps.heb_freq_phrase import frequency_to_phrase_he
+from number_he import number_to_heb_string, int_to_hebrew
 import os, json, sys, pika, soundfile as sf, torch
 from transformers import AutoProcessor, VitsModel
 
@@ -8,6 +8,22 @@ MODEL_ID = "facebook/mms-tts-heb"
 STATIC_DIR = os.getenv("STATIC_DIR","static")
 
 def ensure_dirs(path:str): os.makedirs(os.path.dirname(path), exist_ok=True)
+
+def format_freq_phrase(has_freq: bool, freq_hz: float) -> str:
+    if (not has_freq) or (freq_hz <=0):
+        return "לא אושר עבורך תדר"
+    
+    if freq_hz >= 1e6:
+        val = round(freq_hz / 1e6, 3); unit = "מגה־הרץ"
+    elif freq_hz >= 1e3:
+        val = round(freq_hz / 1e3, 1); unit = "קילו־הרץ"
+    else:
+        val = int(round(freq_hz));     unit = "הרץ"
+    
+    s = f"{val}".rstrip('0').rstrip('.') if isinstance(val, float) else f"{val}"
+    spoken = number_to_heb_string(s)
+    return f"עברו לתדר {spoken} {unit}"
+        
 
 def main():
     print("Loading MMS Hebrew model (CPU)...")

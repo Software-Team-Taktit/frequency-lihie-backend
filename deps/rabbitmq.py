@@ -4,7 +4,7 @@ QUEUE    = os.getenv("TTS_QUEUE", "tts_he_mms")
 RMQ_HOST = os.getenv("RABBIT_HOST", "localhost")
 
 def publish_tts_freq(is_freq: bool, freq_hz: float) -> dict:
-    msg = {"isFreq": is_freq, "freq_hz": freq_hz}
+    msg = {"isFreq": bool(is_freq), "freq_hz": float(freq_hz)}
     
     conn = pika.BlockingConnection(pika.ConnectionParameters(RMQ_HOST))
     ch = conn.channel()

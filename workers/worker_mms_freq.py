@@ -1,4 +1,5 @@
-from number_he import number_to_heb_string, int_to_hebrew
+import uuid
+from .number_he import number_to_heb_string
 import os, json, sys, pika, soundfile as sf, torch
 from transformers import AutoProcessor, VitsModel
 
@@ -34,40 +35,34 @@ def synthesize(text: str, out_path: str):
     sf.write(out_path, wav, 16000)
     
 def main():
-    print("Loading MMS Hebrew model (CPU)...")
-    processor = AutoProcessor.from_pretrained(MODEL_ID)
-    model = VitsModel.from_pretrained(MODEL_ID)
-    
     conn = pika.BlockingConnection(pika.ConnectionParameters(host=RMQ_HOST))
     ch = conn.channel()
     ch.queue_declare(queue=QUEUE, durable=True)
     ch.basic_qos(prefetch_count=1)
-    print(" [*] Waiting for messages. CTRL+C to exit")
+    print(f" [*] Waiting on '{QUEUE}'. CTRL+C to exit")
     
     def handle(ch_, method, props, body):
         try:
             msg = json.loads(body.decode("utf-8"))
-            if msg.get("type") != "announce_frequency":
-                ch_.basic_ack(delivery_tag=method.delivery_tag); return
-            freq_hz = float(msg["freq_hz"])
-            style = msg.get("style", "digits")
-            rel = msg["rel_path"]
-            text = frequency_to_phrase_he(freq_hz, style)
+            has_freq = bool(msg.get("isFreq", False))
+            freq_hz = float(msg.get("freq_hz", 0))
+            if freq_hz < 0:
+                raise ValueError(f"freq_hz must be >= 0, got {freq_hz}")
             
+            text = format_freq_phrase(has_freq, freq_hz)
+            
+            rel = f"tts/freq_{uuid.uuid4().hex}.wav"
             out_path = os.path.join(STATIC_DIR, rel)
-            ensure_dirs(out_path)
             
-            inputs = processor(text=text, return_tensors="pt")
-            with torch.no_grad():
-                wav = model(**inputs).waveform.squeeze().cpu().numpy()
-            sf.write(out_path, wav, 16000)
+            synthesize(text, out_path)
             
             print(f" [✓] {text} -> {out_path}")
             ch_.basic_ack(delivery_tag=method.delivery_tag)
+            
         except Exception as e:
             print(" [x] Error:", e, file=sys.stderr)
             ch_.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
-            
+        
     ch.basic_consume(queue=QUEUE, on_message_callback=handle)
     ch.start_consuming()
 

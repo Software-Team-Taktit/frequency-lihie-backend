@@ -24,7 +24,15 @@ def format_freq_phrase(has_freq: bool, freq_hz: float) -> str:
     spoken = number_to_heb_string(s)
     return f"עברו לתדר {spoken} {unit}"
         
-
+def synthesize(text: str, out_path: str):
+    processor = AutoProcessor.from_pretrained(MODEL_ID)
+    model = VitsModel.from_pretrained(MODEL_ID)
+    inputs = processor(text = text, return_tensors = "pt")
+    with torch.no_grad():
+        wav = model(**inputs).waveform.squeeze().cpu().numpy()
+    ensure_dirs(out_path)
+    sf.write(out_path, wav, 16000)
+    
 def main():
     print("Loading MMS Hebrew model (CPU)...")
     processor = AutoProcessor.from_pretrained(MODEL_ID)

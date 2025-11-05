@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from db.mongo import connect_to_mongo, close_mongo_connection, get_db
@@ -17,11 +19,11 @@ app = FastAPI(
 os.makedirs("static/tts", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-origins = ["http://localhost:5173"]
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      
+    allow_origins=[FRONTEND_ORIGIN],      
     allow_credentials=True,    
     allow_methods=["*"],       
     allow_headers=["*"],      

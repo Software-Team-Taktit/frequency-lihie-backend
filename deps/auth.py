@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException, Header
 from starlette import status
 from jose import JWTError
 from repositories.types_repositories.user_repository import UserRepository
-from jwt_utils import decode_token 
+from deps.jwt_utils import decode_token 
 
 def get_user_repo() -> UserRepository:
     return UserRepository()

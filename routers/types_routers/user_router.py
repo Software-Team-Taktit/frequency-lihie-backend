@@ -4,7 +4,7 @@ from models.requests.user_request import UserCreateRequest, UserUpdateRequest, U
 from repositories.types_repositories.user_repository import UserRepository
 from fastapi import Depends, HTTPException, APIRouter,Response, Request
 from starlette import status
-from deps.auth import get_current_user, get_session_repo
+from deps.auth import get_current_user
 from repositories.types_repositories.session_repository import SessionRepository
 
 def get_user_repo() -> UserRepository:

@@ -4,10 +4,13 @@ from models.enums.object_type import ObjectType
 
 class Platform(BaseObject):
     name: str
-    frequency_mhz: float
     bw_khz: float
-    tx_power_dbm: float
-    antenna_height_m: float
+    tx_gain: float
+    tx_height_m: float = 20.0
+    rx_gain: float
+    rx_height_m: float = 1.5
+    min_sinr_required_db: float = 12.0
+    noise_figure_db: float = 3.0
     
     def __init__(self, **data):
         data["id"] = data.get("id", str(uuid4()))

@@ -14,13 +14,23 @@ class FrequencyRequest(BaseModel):
     platform_id: str
 
 class MissionCreateRequest(BaseModel):
+    """
+    Request to create a mission AFTER frequency & tx power
+    were already calculated by the Co-existing Service.
+    """
     name: str = Field(..., min_length=2, max_length=80)
     coordinate: Coordinate
-    enviroment_type: EnviromentType
+    freq_mhz: float
+    tx_power_dbm: float
     platform_id: str
     
 class MissionUpdateRequest(BaseModel):
-    name: str | None = Field(None, min_length=2, max_length=80)
+    """
+    Partial update of an existing mission.
+    All fields are optional.
+    """
+    name: str = Field(..., min_length=2, max_length=80)
     coordinate: Coordinate
-    enviroment_type: EnviromentType
+    freq_mhz: float
+    tx_power_dbm: float
     platform_id: str

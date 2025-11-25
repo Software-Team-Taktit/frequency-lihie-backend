@@ -29,8 +29,8 @@ class MissionUpdateRequest(BaseModel):
     Partial update of an existing mission.
     All fields are optional.
     """
-    name: str = Field(..., min_length=2, max_length=80)
-    coordinate: Coordinate
-    freq_mhz: float
-    tx_power_dbm: float
-    platform_id: str
+    name: str | None = Field(None, min_length=2, max_length=80)
+    coordinate: Coordinate | None = None
+    freq_mhz: float | None = None
+    tx_power_dbm: float | None = None
+    platform_id: str | None = None

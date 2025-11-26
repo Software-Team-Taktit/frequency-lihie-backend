@@ -21,7 +21,21 @@ class UserCreateRequest(BaseModel):
         return v
     
 class UserUpdateRequest(UserCreateRequest):
-    pass
+    """
+    Partial update of an existing user.
+    All fields are optional.
+    """
+    personal_id: str | None
+    first_name: str | None = Field(None, min_length=2)
+    last_name: str | None = Field(None, min_length=2)
+    unit: str | None = None
+    
+    @field_validator("personal_id")
+    @classmethod
+    def validate_personal_id(cls, v: str) -> str:
+        if not v.isdigit() or len(v) != 7:
+            raise ValueError("Personal ID must be exactly 7 digits")
+        return v
 
 class UserLogInRequest(BaseModel):
     personal_id: str = Field(

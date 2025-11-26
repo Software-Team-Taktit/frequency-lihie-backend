@@ -9,6 +9,7 @@ from routers.types_routers.admin_router import admin_router
 from routers.types_routers.platform_router import platform_router
 from routers.types_routers.mission_router import mission_router
 from routers.types_routers.user_router import user_crud_router
+from routers.types_routers.frequency_router import freq_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -48,3 +49,4 @@ app.include_router(admin_router)
 app.include_router(platform_router)
 app.include_router(mission_router)
 app.include_router(user_crud_router)
+app.include_router(freq_router)

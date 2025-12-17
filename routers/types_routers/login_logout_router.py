@@ -3,35 +3,63 @@ from starlette import status
 from models.domain.types.users.user import User
 from models.requests.user_request import UserLogInRequest
 from repositories.types_repositories.user_repository import UserRepository
+from models.domain.types.users.admin import Admin
+from models.requests.admin_request import AdminLogInRequest
+from repositories.types_repositories.admin_repository import AdminRepository
 from deps.auth import get_current_user  
 from deps.jwt_utils import create_access_token, create_refresh_token, decode_token
+from typing import Union
 from jose import JWTError
 import os
 
 def get_user_repo() -> UserRepository:
     return UserRepository()
 
-user_router = APIRouter(prefix="/users", tags=["users"])
+def get_admin_repo() -> AdminRepository:
+    return AdminRepository()
+
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "refresh_token")
-REFRESH_COOKIE_PATH = os.getenv("REFRESH_COOKIE_PATH", "/users")
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"  
-COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")                  
+REFRESH_COOKIE_PATH = os.getenv("REFRESH_COOKIE_PATH", "/")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 REFRESH_MAX_AGE = 60 * 60 * 24 * int(os.getenv("REFRESH_TTL_DAYS", "7"))
 
-
+#---LOGIN---
 @user_router.post("/login")
-async def login(dto: UserLogInRequest, response: Response, repo: UserRepository = Depends(get_user_repo)):
-    user = await repo.get_by_personal_id(dto.personal_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="user not found")
+async def login(
+    dto: Union[UserLogInRequest, AdminLogInRequest], 
+    response: Response, 
+    user_repo: UserRepository = Depends(get_user_repo),
+    admin_repo: AdminRepository = Depends(get_admin_repo),
+):
+    personal_id = dto.personal_id
     
-    access = create_access_token(sub=user.id, extra={"unit": getattr(user, "unit", "user")})
-    refresh = create_refresh_token(sub=user.id)
+    user = await user_repo.get_by_personal_id(personal_id)
+    if user:
+        role = "user"
+        principal = user
+    else:
+        admin = await admin_repo.get_by_personal_id(personal_id)
+        if not admin:
+            raise HTTPException(status_code=404, detail="user/admin not found")
+        role = "admin"
+        principal = admin
+    
+    access_token = create_access_token(
+        sub=principal.id,
+        extra={"role": role},
+    )
+    
+    refresh_token = create_refresh_token(
+        sub=principal.id,
+        extra={"role": role},
+    )
     
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
-        value=refresh,
+        value=refresh_token,
         httponly=True,
         secure=COOKIE_SECURE,       
         samesite=COOKIE_SAMESITE,   
@@ -40,9 +68,10 @@ async def login(dto: UserLogInRequest, response: Response, repo: UserRepository 
     )
     
     return {
-        "access_token": access,
+        "access_token": access_token,
         "token_type": "bearer",
-        "user": user.model_dump(),
+        "role": role,
+        "user": principal.model_dump(),
     }
     
 @user_router.post("/refresh")

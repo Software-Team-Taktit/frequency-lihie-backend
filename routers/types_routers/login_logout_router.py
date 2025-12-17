@@ -27,7 +27,7 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 REFRESH_MAX_AGE = 60 * 60 * 24 * int(os.getenv("REFRESH_TTL_DAYS", "7"))
 
 #---LOGIN---
-@user_router.post("/login")
+@auth_router.post("/login")
 async def login(
     dto: Union[UserLogInRequest, AdminLogInRequest], 
     response: Response, 
@@ -74,23 +74,37 @@ async def login(
         "user": principal.model_dump(),
     }
     
-@user_router.post("/refresh")
+#---REFRESH---
+@auth_router.post("/refresh")
 async def refresh_token(req: Request, res: Response):
-    rt = req.cookies.get(REFRESH_COOKIE_NAME)
-    if not rt:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing refresh token")
-    try:
-        payload = decode_token(rt)
-    except JWTError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
-    if payload.get("type") != "refresh":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong token type")
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject")
-    new_access = create_access_token(sub=user_id)
+    token = req.cookies.get(REFRESH_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
 
-    return {"access_token": new_access, "token_type": "bearer"}
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Wrong token type")
+
+    sub = payload.get("sub")
+    role = payload.get("role")
+
+    if not sub or not role:
+        raise HTTPException(status_code=401, detail="Invalid refresh token payload")
+
+    new_access = create_access_token(
+        sub=sub,
+        extra={"role": role},
+    )
+
+    return {
+        "access_token": new_access,
+        "token_type": "bearer",
+        "role": role,
+    }
     
 @user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(response: Response):

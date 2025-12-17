@@ -106,6 +106,7 @@ async def refresh_token(req: Request, res: Response):
         "role": role,
     }
     
+#---LOGOUT---
 @auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(response: Response):
     response.delete_cookie(
@@ -115,7 +116,7 @@ async def logout(response: Response):
     )
     return
 
-@user_router.get("/me")
-async def me(current_user: User = Depends(get_current_user)):
+#---WHOAMI---
+@auth_router.get("/me")
+async def me(current_user=Depends(get_current_user)):
     return current_user.model_dump()
-

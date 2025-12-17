@@ -106,7 +106,7 @@ async def refresh_token(req: Request, res: Response):
         "role": role,
     }
     
-@user_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(response: Response):
     response.delete_cookie(
         key=REFRESH_COOKIE_NAME,

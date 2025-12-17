@@ -4,7 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from db.mongo import connect_to_mongo, close_mongo_connection, get_db
-from routers.types_routers.login_logout_router import user_router
+from routers.types_routers.login_logout_router import auth_router
 from routers.types_routers.admin_router import admin_router
 from routers.types_routers.platform_router import platform_router
 from routers.types_routers.mission_router import mission_router
@@ -44,7 +44,7 @@ async def shutdown_event():
 async def health_check():
     return {"status": "ok"}
 
-app.include_router(user_router)
+app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(platform_router)
 app.include_router(mission_router)

@@ -1,4 +1,5 @@
 import math
+from models.domain.types.platform import Platform
 from models.helpers.coordinate import Coordinate
 
 def clamp_positive(x: float, min_value: float) -> float:
@@ -21,3 +22,14 @@ def haversine_km(c1: Coordinate, c2: Coordinate) -> float:
 
     return 2 * R * math.asin(math.sqrt(a))
     
+def dbm_to_mw(dbm: float) -> float:
+    return 10 ** (dbm / 10.0)
+
+def mw_to_dbm(mw: float) -> float:
+    mw = clamp_positive(mw, 1e-12)
+    return 10.0 * math.log10(mw)
+
+def noise_floor_dbm(platform: Platform) -> float:
+    # -174 dBm/Hz + 10log10(BW_Hz) + NF
+    bw_hz = clamp_positive(platform.bw_khz * 1000.0, 1.0)
+    return -174.0 + 10.0 * math.log10(bw_hz) + platform.noise_figure_db

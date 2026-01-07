@@ -17,7 +17,7 @@ class PropagationFactory:
         }
     
     def get_model(self, env_type: EnviromentType) -> BasePropagationModel:
-        model = self._models(env_type)
+        model = self._models.get(env_type)
         if not model:
             raise ValueError(f"No propagation model for env_type={env_type}")
         return model

@@ -1,6 +1,6 @@
 import math
 import pydantic 
-from services.helpers import haversine_km
+from services.co_existing_service.utils.helpers import haversine_km
 from services.base_propagation_model import BasePropagationModel
 from services.domain_propagation_models.fspl_model import FSPLModel
 from services.domain_propagation_models.hata_model import HataModel

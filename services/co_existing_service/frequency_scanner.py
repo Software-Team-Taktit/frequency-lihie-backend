@@ -7,7 +7,7 @@ from models.domain.types.mission import Mission
 from models.requests.frequency_req_res import FrequencyRequest
 
 from services.base_propagation_model import BasePropagationModel
-from services.helpers import clamp_positive, dbm_to_mw, noise_floor_dbm
+from services.co_existing_service.utils.helpers import clamp_positive, dbm_to_mw, noise_floor_dbm
 from services.co_existing_service.propagation_factory import PropagationFactory
 
 # scan config

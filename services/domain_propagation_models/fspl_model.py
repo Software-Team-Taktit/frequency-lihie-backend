@@ -1,5 +1,5 @@
 from services.base_propagation_model import BasePropagationModel
-from services.helpers import clamp_positive
+from services.co_existing_service.utils.helpers import clamp_positive
 import math
 
 class FSPLModel(BasePropagationModel):

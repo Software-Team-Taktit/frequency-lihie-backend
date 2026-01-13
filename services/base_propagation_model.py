@@ -1,10 +1,9 @@
 from abc import abstractmethod, ABC
-import math
+from services.models.base_propagation_dto import BasePropagationDTO
 
 class BasePropagationModel(ABC):
     @abstractmethod
-    def calculate_path_loss(self, freq_mhz: float, distance_km: float,
-                            tx_height_m: float, rx_height_m: float) -> float:
+    def calculate_path_loss(self, dto: BasePropagationDTO) -> float:
         """
             Calculates the Path Loss in dB based on the specific model physics.
         """

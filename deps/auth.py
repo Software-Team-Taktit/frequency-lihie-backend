@@ -5,6 +5,7 @@ from jose import JWTError
 from repositories.types_repositories.user_repository import UserRepository
 from repositories.types_repositories.admin_repository import AdminRepository
 from deps.jwt_utils import decode_token 
+from models.enums.object_type import ObjectType
 
 def get_user_repo() -> UserRepository:
     return UserRepository()
@@ -65,3 +66,16 @@ async def get_current_user(
         )
 
     return user
+
+async def require_admin(current=Depends(get_current_user)):
+    t = getattr(current, "type", None)
+    if t == ObjectType.ADMIN:
+        return current
+    
+    if isinstance(t, str) and t.lower() == "admin":
+        return current
+    
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin only",
+    )

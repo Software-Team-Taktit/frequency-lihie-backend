@@ -42,5 +42,28 @@ class PropagationFactory:
             PropagationModelType.EGLI: egli_mapper,
         }
         
+    def get_model_type(self, env_type: EnviromentType) -> PropagationModelType:
+        mt = self._env_to_model_type.get(env_type)
+        if not mt:
+            raise ValueError(f"No model type for env_type={env_type}")
+        return mt
     
+    def get_model(self, model_type: PropagationModelType) -> BasePropagationModel:
+        model = self._model_by_type.get(model_type)
+        if not model:
+            raise ValueError(f"No propagation model for model_type={model_type}")
+        return model
     
+    def distance_km(self, a: Coordinate, b: Coordinate) -> float:
+        return haversine_km(a, b)
+    
+    def path_loss_db(self, dto: GenericPropagationDTO) -> float:
+        model_type = dto.model_type
+        mapper = self._mappers.get(model_type)
+        if not mapper:
+            raise ValueError(f"No mapper for model_type = {model_type}")
+        
+        specific_dto = mapper(dto)
+        
+        model = self.get_model(model_type)
+        return model.calculate_path_loss(specific_dto)

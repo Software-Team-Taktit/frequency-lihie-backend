@@ -1,37 +1,46 @@
-import math
-import pydantic 
-from services.co_existing_service.utils.helpers import haversine_km
+from typing import Callable, Dict
+
+from services.utils.helpers import haversine_km
 from services.base_propagation_model import BasePropagationModel
 from services.domain_propagation_models.fspl_model import FSPLModel
 from services.domain_propagation_models.hata_model import HataModel
 from services.domain_propagation_models.egli_model import EgliModel
+
 from models.helpers.coordinate import Coordinate
 from models.enums.enviroment_type import EnviromentType
 
+from services.models.enums.pathloss_models_enum import PropagationModelType
+from services.models.generic_propagation_dto import GenericPropagationDTO
+from services.models.base_propagation_dto import BasePropagationDTO
+
+from services.mappers.fspl_mapper import fspl_mapper
+from services.mappers.hata_mapper import hata_mapper
+from services.mappers.egli_mapper import egli_mapper
+
 class PropagationFactory:
     def __init__(self):
-        self._models: dict[EnviromentType, BasePropagationModel] = {
-            EnviromentType.OPEN_SPACE: FSPLModel(),
-            EnviromentType.URBAN: HataModel(),
-            EnviromentType.MOUNT: EgliModel(),
+        #Enviroment -> ModelType
+        self._env_to_model_type: Dict[EnviromentType, PropagationModelType] = {
+            EnviromentType.OPEN_SPACE: PropagationModelType.FSPL,
+            EnviromentType.URBAN: PropagationModelType.HATA,
+            EnviromentType.MOUNT: PropagationModelType.EGLI,
         }
+        
+        #ModelType -> Model instance
+        self._model_by_type: Dict[PropagationModelType, BasePropagationModel] = {
+            PropagationModelType.FSPL: FSPLModel(),
+            PropagationModelType.HATA: HataModel(),
+            PropagationModelType.EGLI: EgliModel(),
+        }
+        
+        #ModelType -> Mappers(GenericDTO -> SpecificDTO)
+        self._mappers: Dict[
+            PropagationModelType, Callable[[GenericPropagationDTO], BasePropagationDTO]
+        ] = {
+            PropagationModelType.FSPL: fspl_mapper,
+            PropagationModelType.HATA: hata_mapper,
+            PropagationModelType.EGLI: egli_mapper,
+        }
+        
     
-    def get_model(self, env_type: EnviromentType) -> BasePropagationModel:
-        model = self._models.get(env_type)
-        if not model:
-            raise ValueError(f"No propagation model for env_type={env_type}")
-        return model
     
-    def distance_km(self, a: Coordinate, b: Coordinate) -> float:
-        return haversine_km(a, b)
-    
-    def path_loss_db(
-        self,
-        env_type: EnviromentType,
-        freq_mhz: float,
-        distance_km: float,
-        tx_height_m: float,
-        rx_height_m: float,
-    ) -> float:
-        model = self.get_model(env_type)
-        return model.calculate_path_loss(freq_mhz, distance_km, tx_height_m, rx_height_m)

@@ -1,17 +1,17 @@
 from services.base_propagation_model import BasePropagationModel
-from services.co_existing_service.utils.helpers import clamp_positive
+from services.models.types.hata_dto import HataDTO
+from services.utils.helpers import clamp_positive
 import math
 
 class HataModel(BasePropagationModel):
     """
     Okumura-Hata Urban (small/medium city)
     """
-    def calculate_path_loss(self, freq_mhz: float, distance_km: float, 
-                            tx_height_m: float, rx_height_m: float) -> float:
-        d = clamp_positive(distance_km, 0.001)
-        f = clamp_positive(freq_mhz, 1.0)
-        hb = clamp_positive(tx_height_m, 1.0)
-        hm = clamp_positive(rx_height_m, 1.0)
+    def calculate_path_loss(self, dto: HataDTO) -> float:
+        d = clamp_positive(dto.distance_km, 0.001)
+        f = clamp_positive(dto.freq_mhz, 1.0)
+        hb = clamp_positive(dto.tx_height_m, 1.0)
+        hm = clamp_positive(dto.rx_height_m, 1.0)
         
         if f <= 200:
             a_hm = 8.29 * (math.log10(1.54 * hm) ** 2) - 1.1

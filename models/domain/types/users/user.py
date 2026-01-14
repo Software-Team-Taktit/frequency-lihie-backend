@@ -9,6 +9,6 @@ class User(BaseObject):
     unit: str
     
     def __init__(self, **data):
-        data["id"] = data["personal_id"]
-        data["type"] = ObjectType.USER
+        data.setdefault("id", data["personal_id"])
+        data.setdefault("type", ObjectType.USER)
         super().__init__(**data)

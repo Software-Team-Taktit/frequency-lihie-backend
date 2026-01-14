@@ -1,14 +1,15 @@
 import math
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
+from typing import Iterable, List
 
 from models.domain.types.platform import Platform
 from models.domain.types.mission import Mission
 from models.requests.frequency_req_res import FrequencyRequest
 
 from services.base_propagation_model import BasePropagationModel
-from services.co_existing_service.utils.helpers import clamp_positive, dbm_to_mw, noise_floor_dbm
+from services.utils.helpers import clamp_positive, dbm_to_mw, noise_floor_dbm
 from services.co_existing_service.propagation_factory import PropagationFactory
+from services.models.generic_propagation_dto import GenericPropagationDTO
 
 # scan config
 # ---------------------
@@ -67,13 +68,18 @@ class FrequencyScanner:
             
             d_km = self.propagation.distance_km(m.coordinate, request.coordinate)
             
-            pl_db = self.propagation.path_loss_db(
-                env_type=request.enviroment_type,
+            model_type = self.propagation.get_model_type(request.enviroment_type)
+            
+            dto = GenericPropagationDTO(
+                model_type=model_type,
                 freq_mhz=candidate_freq_mhz,
                 distance_km=d_km,
                 tx_height_m=platform.tx_height_m,
-                rx_height_m=platform.rx_height_m
+                rx_height_m=platform.rx_height_m,
             )
+            
+            pl_db = self.propagation.path_loss_db(dto)
+            
             p_rx_dbm = m.tx_power_dbm - pl_db
             interf_mw += weight * dbm_to_mw(p_rx_dbm)
             

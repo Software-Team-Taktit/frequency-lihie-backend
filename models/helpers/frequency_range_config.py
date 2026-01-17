@@ -5,7 +5,7 @@ class FrequencyRangeConfig(BaseModel):
     min_mhz: float = Field(..., gt=0)
     max_mhz: float = Field(..., gt=0)
     
-    @model_validator
+    @model_validator(mode="after")
     def _validate(self):
         if self.min_mhz >= self.max_mhz:
             raise ValueError("min_mhz must be smaller than max_mhz")

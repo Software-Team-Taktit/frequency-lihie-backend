@@ -49,8 +49,8 @@ class FrequencyScanner:
             f += step
 
         return freqs
-
-    def _interference_score_mw(
+    
+    def _interference_mw(
         self,
         request: FrequencyRequest,
         platform: Platform,
@@ -58,8 +58,11 @@ class FrequencyScanner:
         candidate_freq_mhz: float,
         interference_window_mhz: float,
     ) -> float:
-        noise_mw = dbm_to_mw(noise_floor_dbm(platform))
-
+        """
+        Interfernce only from other missions around candidate frequency.
+        does not include noise.
+        """
+        
         sigma = clamp_positive(interference_window_mhz, 0.001)
         interf_mw = 0.0
 
@@ -86,8 +89,30 @@ class FrequencyScanner:
             p_rx_dbm = m.tx_power_dbm - pl_db
             interf_mw += weight * dbm_to_mw(p_rx_dbm)
 
-        return interf_mw + noise_mw
+        return float(interf_mw)
 
+    def _interference_score_mw(
+        self,
+        request: FrequencyRequest,
+        platform: Platform,
+        missions: Iterable[Mission],
+        candidate_freq_mhz: float,
+        interference_window_mhz: float,
+    ) -> float:
+        """
+        Interference + Noise (mW) used for frequency scoring.
+        This keeps the existing scanning behavior unchanged.
+        """
+        noise_mw = dbm_to_mw(noise_floor_dbm(platform))
+        interf_mw = self._interference_mw(
+            request=request,
+            platform=platform,
+            missions=missions,
+            candidate_freq_mhz=candidate_freq_mhz,
+            interference_window_mhz=interference_window_mhz,
+        )
+        return float(interf_mw) + float(noise_mw)
+        
     def _link_path_loss_db(
         self,
         request: FrequencyRequest,

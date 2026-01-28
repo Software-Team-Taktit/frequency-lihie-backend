@@ -60,4 +60,17 @@ def rx_power_dbm(
         - float(path_loss_db)
     )
     
+def sinr_db(
+    p_tx_dbm: float,
+    platform: Platform,
+    path_loss_db: float,
+    interference_mw: float
+) -> float:
+    prx_dbm = rx_power_dbm(
+        p_tx_dbm=p_tx_dbm,
+        platform=platform,
+        path_loss_db=path_loss_db,
+    )
     
+    noise_mw = dbm_to_mw(noise_floor_dbm(platform=platform))
+    denom_mw = clamp_positive(float(interference_mw) + float(noise_mw), 1e-12)

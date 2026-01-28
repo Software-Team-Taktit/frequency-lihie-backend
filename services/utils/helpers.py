@@ -47,3 +47,17 @@ def all_fields(dto: GenericPropagationDTO) -> dict:
         raise ValueError(f"Missing required fields for {dto.model_type}: {missing}")
     
     return {k: v for k, v in data.items() if k in allowed}
+
+def rx_power_dbm(
+    p_tx_dbm: float,
+    platform: Platform,
+    path_loss_db: float
+) -> float:
+    return (
+        float(p_tx_dbm)
+        + float(platform.tx_gain)
+        + float(platform.rx_gain)
+        - float(path_loss_db)
+    )
+    
+    

@@ -6,6 +6,7 @@ from repositories.types_repositories.mission_repository import MissionRepository
 from repositories.types_repositories.frequency_range_repository import FrequencyRangeRepository
 
 from services.co_existing_service.frequency_scanner import FrequencyScanner, CoarseFineScanConfig, Band
+from services.co_existing_service.newton_raphson import solve_tx_power_newton_raphson, NewtonConfig, NewtonRaphsonError
 
 
 class FrequencyService:
@@ -57,5 +58,48 @@ class FrequencyService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"לא הצלחנו למצוא תדר מתאים בתוך הטווח המאושר ({min_mhz}-{max_mhz} MHz).",
             )
+            
+    
+        path_loss_db = self.scanner._link_path_loss_db(
+            request=request,
+            platform=platform,
+            candidate_freq_mhz=float(best_freq),
+            link_distance_km=float(runtime_config.link_distance_km)
+        )
+        
+        interference_mw = self.scanner._interference_mw(
+            request=request,
+            platform=platform,
+            missions=missions,
+            candidate_freq_mhz=float(best_freq),
+            interference_window_mhz=float(runtime_config.interference_window_mhz)
+        )
+        
+        print("best_freq:", best_freq)
+        print("path_loss_db:", path_loss_db)
+        print("interference_mw:", interference_mw)
+        print("sinr_required:", platform.min_sinr_required_db)
+        print("tx_gain:", platform.tx_gain, "rx_gain:", platform.rx_gain)
+        print("tx_height_m:", platform.tx_height_m, "rx_height_m:", platform.rx_height_m)
 
-        return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=30.0)
+        try:
+            tx_power_dbm = solve_tx_power_newton_raphson(
+                platform=platform,
+                path_loss_db= float(path_loss_db),
+                interference_mw=float(interference_mw),
+                sinr_required_db=float(platform.min_sinr_required_db),
+                config=NewtonConfig(
+                    tol_db=0.1,
+                    max_iter=20,
+                    ptx_min_dbm=-100.0,
+                    ptx_max_dbm=100.0,
+                    numeric_derivative_step_db=0.1
+                ),
+            )
+        except NewtonRaphsonError as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"נכשל חישוב עוצמת שידור (Newton-Raphson): {str(e)}",
+            )
+
+        return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=float(tx_power_dbm))

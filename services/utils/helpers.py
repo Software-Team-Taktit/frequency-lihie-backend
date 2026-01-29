@@ -28,7 +28,7 @@ def dbm_to_mw(dbm: float) -> float:
     return 10 ** (dbm / 10.0)
 
 def mw_to_dbm(mw: float) -> float:
-    mw = clamp_positive(mw, 1e-12)
+    mw = clamp_positive(mw, 1e-20) 
     return 10.0 * math.log10(mw)
 
 def noise_floor_dbm(platform: Platform) -> float:
@@ -60,17 +60,16 @@ def rx_power_dbm(
         - float(path_loss_db)
     )
     
-def sinr_db(
-    p_tx_dbm: float,
-    platform: Platform,
-    path_loss_db: float,
-    interference_mw: float
-) -> float:
-    prx_dbm = rx_power_dbm(
-        p_tx_dbm=p_tx_dbm,
-        platform=platform,
-        path_loss_db=path_loss_db,
-    )
-    
-    noise_mw = dbm_to_mw(noise_floor_dbm(platform=platform))
-    denom_mw = clamp_positive(float(interference_mw) + float(noise_mw), 1e-12)
+def sinr_db(p_tx_dbm: float, platform: Platform, path_loss_db: float, interference_mw: float) -> float:
+    prx_dbm = rx_power_dbm(p_tx_dbm, platform, path_loss_db)
+
+    noise_dbm = noise_floor_dbm(platform)
+    noise_mw = dbm_to_mw(noise_dbm)
+
+    denom_mw_raw = float(interference_mw) + float(noise_mw)
+    denom_mw = clamp_positive(denom_mw_raw, 1e-15)
+
+    print("ptx", p_tx_dbm, "prx_dbm", prx_dbm, "noise_dbm", noise_dbm,
+          "denom_mw_raw", denom_mw_raw, "denom_dbm", mw_to_dbm(denom_mw))
+
+    return float(prx_dbm) - mw_to_dbm(denom_mw)

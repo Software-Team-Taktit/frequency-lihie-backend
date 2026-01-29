@@ -24,6 +24,7 @@ config = CoarseFineScanConfig(
     guard_mhz=2.0,
     path_loss_weight=1.0,
     interference_weight=10.0,
+    link_distance_km=1.0
 )
 
 def get_frequency_service(

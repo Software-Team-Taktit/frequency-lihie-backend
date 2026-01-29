@@ -15,3 +15,17 @@ class NewtonConfig:
 class NewtonRphsonError(RuntimeError):
     pass
 
+def _clamp(x: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, x))
+
+def initial_guess_tx_power_dbm(
+    platform: Platform,
+    path_loss_db: float,
+    interference_mw: float,
+    sinr_required_db: float
+) -> float:
+    noise_mw = dbm_to_mw(noise_floor_dbm(platform))
+    denom_mw = clamp_positive(float(interference_mw) + float(noise_mw), 1e-12)
+    denom_dbm = mw_to_dbm(denom_mw)
+    
+    return float(sinr_required_db) + float(denom_dbm) - float(platform.tx_gain) - float(platform.rx_gain) + float(path_loss_db)

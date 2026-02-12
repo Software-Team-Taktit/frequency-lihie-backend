@@ -102,4 +102,4 @@ class FrequencyService:
                 detail=f"נכשל חישוב עוצמת שידור (Newton-Raphson): {str(e)}",
             )
 
-        return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=float(tx_power_dbm))
+        return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=round(float(tx_power_dbm)))

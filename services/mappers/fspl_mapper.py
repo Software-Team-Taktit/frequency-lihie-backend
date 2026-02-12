@@ -9,9 +9,4 @@ def fspl_mapper(dto: GenericPropagationDTO) -> FsplDTO:
     
     data = all_fields(dto)
     
-    if data["freq_mhz"] <= 0:
-        raise ValueError(f"FSPL requires freq_mhz > 0, got {data['freq_mhz']}")
-    if data["distance_km"] <= 0:
-        raise ValueError(f"FSPL requires distance_km > 0, got {data['distance_km']}")
-    
     return FsplDTO(**data)

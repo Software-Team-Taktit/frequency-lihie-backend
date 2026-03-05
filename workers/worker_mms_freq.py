@@ -25,6 +25,13 @@ def format_freq_phrase(has_freq: bool, freq_hz: float) -> str:
     spoken = number_to_heb_string(s)
     return f"עברו לתדר {spoken} {unit}"
         
+def format_power_phrase(tx_power_dbm: float | None) -> str:
+    if tx_power_dbm is None:
+        return ""
+    s = f"{tx_power_dbm}".rstrip('0').rstrip('.')
+    spoken = number_to_heb_string(s)
+    return f"בעוצמת שידור {spoken} די בי אם"        
+
 def synthesize(text: str, out_path: str):
     processor = AutoProcessor.from_pretrained(MODEL_ID)
     model = VitsModel.from_pretrained(MODEL_ID)
@@ -49,7 +56,13 @@ def main():
             if freq_hz < 0:
                 raise ValueError(f"freq_hz must be >= 0, got {freq_hz}")
             
-            text = format_freq_phrase(has_freq, freq_hz)
+            tx_power_dbm = msg.get("tx_power_dbm", None)
+            tx_power_dbm = None if tx_power_dbm is None else float(tx_power_dbm)
+            
+            freq_text = format_freq_phrase(has_freq, freq_hz)
+            power_text = format_power_phrase(tx_power_dbm)
+            
+            text = freq_text if power_text == "" else f"{freq_text}. {power_text}"
             
             rel = f"tts/freq_{uuid.uuid4().hex}.wav"
             out_path = os.path.join(STATIC_DIR, rel)

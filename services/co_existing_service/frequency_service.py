@@ -8,6 +8,7 @@ from repositories.types_repositories.frequency_range_repository import Frequency
 from services.co_existing_service.frequency_scanner import FrequencyScanner, CoarseFineScanConfig, Band
 from services.co_existing_service.newton_raphson import solve_tx_power_newton_raphson, NewtonConfig, NewtonRaphsonError
 
+from deps.rabbitmq import publish_tts_result
 
 class FrequencyService:
     def __init__(
@@ -101,5 +102,12 @@ class FrequencyService:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"נכשל חישוב עוצמת שידור (Newton-Raphson): {str(e)}",
             )
-
+        
+        freq_hz = float(best_freq) * 1e6
+        publish_tts_result(
+            is_freq=True,
+            freq_hz=freq_hz,
+            tx_power_dbm=float(tx_power_dbm),
+        )
+        
         return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=round(float(tx_power_dbm)))

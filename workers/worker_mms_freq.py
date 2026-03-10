@@ -1,7 +1,8 @@
 import uuid
-from .number_he import number_to_heb_string
+from workers.number_he import number_to_heb_string
 import os, json, sys, pika, soundfile as sf, torch
 from transformers import AutoProcessor, VitsModel
+import traceback
 
 QUEUE = os.getenv("TTS_QUEUE", "tts_he_mms")
 RMQ_HOST = os.getenv("RABBIT_HOST", "localhost")
@@ -28,9 +29,17 @@ def format_freq_phrase(has_freq: bool, freq_hz: float) -> str:
 def format_power_phrase(tx_power_dbm: float | None) -> str:
     if tx_power_dbm is None:
         return ""
-    s = f"{tx_power_dbm}".rstrip('0').rstrip('.')
-    spoken = number_to_heb_string(s)
-    return f"בעוצמת שידור {spoken} די בי אם"        
+
+    tx_power_dbm = float(tx_power_dbm)
+    is_negative = tx_power_dbm < 0
+
+    rounded_abs = int(round(abs(tx_power_dbm)))  # עיגול מלא
+    spoken = number_to_heb_string(str(rounded_abs))
+
+    if is_negative:
+        return f"בעוצמת שידור מינוס {spoken} די בי אם"
+    return f"בעוצמת שידור {spoken} די בי אם"
+
 
 def synthesize(text: str, out_path: str):
     processor = AutoProcessor.from_pretrained(MODEL_ID)
@@ -73,7 +82,8 @@ def main():
             ch_.basic_ack(delivery_tag=method.delivery_tag)
             
         except Exception as e:
-            print(" [x] Error:", e, file=sys.stderr)
+            print(" [x] Error:", repr(e), file=sys.stderr)
+            traceback.print_exc()
             ch_.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         
     ch.basic_consume(queue=QUEUE, on_message_callback=handle)

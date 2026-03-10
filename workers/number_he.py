@@ -38,23 +38,34 @@ def hundreds(n: int) -> str:
     return head if r == 0 else f"{head} {two_digits(r)}"
 
 def thousands(k: int) -> str:
-    if k == 0: return ""
-    if k == 1: return "אלף"
-    if k == 2: return "אלפיים"
-    if 3 <= k <= 10: return f"{THOUSANDS[k]} אלפים"
-    return f"{int_to_hebrew(k)} אלף"
+    k = int(k)  
+    if k == 0:
+        return ""
+    if k == 1:
+        return "אלף"
+    if k == 2:
+        return "אלפיים"
+    if 3 <= k <= 9:
+        return f"{THOUSANDS[k]} אלפים"
+    if k == 10:
+        return "עשרת אלפים"
+    return f"{hundreds(k)} אלף"
+
 
 def int_to_hebrew(n: int) -> str:
+    n = int(n) 
     if n == 0:
-        return "לא אושר עבורך תדר"
+        return "אפס"
+
     th, r = divmod(n, 1000)
-    
+
     parts = []
     if th:
         parts.append(thousands(th))
     if r:
         parts.append(hundreds(r))
     return " ".join(parts)
+
 
 def number_to_heb_string(s: str) -> str:
     if "." in s:

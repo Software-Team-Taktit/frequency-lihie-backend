@@ -1,4 +1,5 @@
 import math
+from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
@@ -33,6 +34,12 @@ class CoarseFineScanConfig:
     interference_weight: float = 1.0
 
 
+@dataclass(frozen=True)
+class MissionInfluence:
+    freq_mhz: float
+    rx_mw: float
+
+
 # frequency scanner
 # ---------------------
 class FrequencyScanner:
@@ -49,7 +56,7 @@ class FrequencyScanner:
             f += step
 
         return freqs
-    
+
     def _interference_mw(
         self,
         request: FrequencyRequest,
@@ -62,7 +69,7 @@ class FrequencyScanner:
         Interfernce only from other missions around candidate frequency.
         does not include noise.
         """
-        
+
         sigma = clamp_positive(interference_window_mhz, 0.001)
         interf_mw = 0.0
 
@@ -91,6 +98,68 @@ class FrequencyScanner:
 
         return float(interf_mw)
 
+    def _build_mission_index(
+        self,
+        request: FrequencyRequest,
+        platform: Platform,
+        missions: Iterable[Mission],
+    ) -> List[MissionInfluence]:
+        model_type = self.propagation.get_model_type(request.enviroment_type)
+        indexed: List[MissionInfluence] = []
+
+        for mission in missions:
+            d_km = self.propagation.distance_km(mission.coordinate, request.coordinate)
+            dto = GenericPropagationDTO(
+                model_type=model_type,
+                freq_mhz=float(mission.freq_mhz),
+                distance_km=d_km,
+                tx_height_m=platform.tx_height_m,
+                rx_height_m=platform.rx_height_m,
+            )
+
+            pl_db = self.propagation.path_loss_db(dto)
+            p_rx_dbm = mission.tx_power_dbm - pl_db
+            indexed.append(
+                MissionInfluence(
+                    freq_mhz=round(float(mission.freq_mhz), 6),
+                    rx_mw=float(dbm_to_mw(p_rx_dbm)),
+                )
+            )
+
+        indexed.sort(key=lambda item: item.freq_mhz)
+        return indexed
+
+    def _interference_radius_mhz(
+        self,
+        interference_window_mhz: float,
+        weight_floor: float = 1e-9,
+    ) -> float:
+        sigma = clamp_positive(interference_window_mhz, 0.001)
+        floor = clamp_positive(weight_floor, 1e-12)
+        return float(sigma * math.sqrt(2.0 * math.log(1.0 / floor)))
+
+    def _interference_mw_from_index(
+        self,
+        mission_index: List[MissionInfluence],
+        mission_freqs: List[float],
+        candidate_freq_mhz: float,
+        interference_window_mhz: float,
+    ) -> float:
+        sigma = clamp_positive(interference_window_mhz, 0.001)
+        radius = self._interference_radius_mhz(interference_window_mhz)
+        candidate = round(float(candidate_freq_mhz), 6)
+
+        left = bisect_left(mission_freqs, candidate - radius)
+        right = bisect_right(mission_freqs, candidate + radius)
+
+        interf_mw = 0.0
+        for item in mission_index[left:right]:
+            delta = abs(item.freq_mhz - candidate)
+            weight = math.exp(-(delta**2) / (2 * (sigma**2)))
+            interf_mw += weight * item.rx_mw
+
+        return float(interf_mw)
+
     def _interference_score_mw(
         self,
         request: FrequencyRequest,
@@ -112,7 +181,7 @@ class FrequencyScanner:
             interference_window_mhz=interference_window_mhz,
         )
         return float(interf_mw) + float(noise_mw)
-        
+
     def _link_path_loss_db(
         self,
         request: FrequencyRequest,
@@ -166,6 +235,41 @@ class FrequencyScanner:
             + float(config.interference_weight) * float(interf_dbm)
         )
 
+    def _quality_score_from_index(
+        self,
+        request: FrequencyRequest,
+        platform: Platform,
+        mission_index: List[MissionInfluence],
+        mission_freqs: List[float],
+        candidate_freq_mhz: float,
+        config: CoarseFineScanConfig,
+    ) -> float:
+        pl_db = self._link_path_loss_db(
+            request=request,
+            platform=platform,
+            candidate_freq_mhz=candidate_freq_mhz,
+            link_distance_km=config.link_distance_km,
+        )
+
+        noise_mw = dbm_to_mw(noise_floor_dbm(platform))
+        interf_mw = self._interference_mw_from_index(
+            mission_index=mission_index,
+            mission_freqs=mission_freqs,
+            candidate_freq_mhz=float(candidate_freq_mhz),
+            interference_window_mhz=float(config.interference_window_mhz),
+        )
+
+        total_interf_mw = float(interf_mw) + float(noise_mw)
+        if total_interf_mw <= 0 or math.isnan(total_interf_mw) or math.isinf(total_interf_mw):
+            return float("inf")
+
+        interf_dbm = 10.0 * math.log10(total_interf_mw)
+
+        return (
+            float(config.path_loss_weight) * float(pl_db)
+            + float(config.interference_weight) * float(interf_dbm)
+        )
+
     def coarse_then_fine_best_freq(
         self,
         request,
@@ -177,28 +281,42 @@ class FrequencyScanner:
         best_score = float("inf")
 
         EPS = 1e-6
+        mission_list = list(missions)
+        mission_index = self._build_mission_index(
+            request=request,
+            platform=platform,
+            missions=mission_list,
+        )
+        mission_freqs = [item.freq_mhz for item in mission_index]
 
         used_freqs = []
-        for m in missions:
+        for mission in mission_list:
             try:
-                used_freqs.append(round(float(m.freq_mhz), 6))
+                used_freqs.append(round(float(mission.freq_mhz), 6))
             except Exception:
                 pass
+        used_freqs.sort()
 
         def is_blocked(f: float) -> bool:
             f = round(float(f), 6)
             guard = float(getattr(config, "guard_mhz", 0.0) or 0.0)
+            radius = guard + EPS if guard > 0 else EPS
+            idx = bisect_left(used_freqs, f)
 
-            if guard > 0:
-                return any(abs(u - f) <= guard + EPS for u in used_freqs)
+            if idx < len(used_freqs) and abs(used_freqs[idx] - f) <= radius:
+                return True
 
-            return any(abs(u - f) <= EPS for u in used_freqs)
+            if idx > 0 and abs(used_freqs[idx - 1] - f) <= radius:
+                return True
+
+            return False
 
         def safe_score(f: float) -> float:
-            s = self._quality_score(
+            s = self._quality_score_from_index(
                 request=request,
                 platform=platform,
-                missions=missions,
+                mission_index=mission_index,
+                mission_freqs=mission_freqs,
                 candidate_freq_mhz=float(f),
                 config=config,
             )

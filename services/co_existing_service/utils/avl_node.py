@@ -23,4 +23,10 @@ class _AVLFrequencyTree:
     def __init__(self):
         self.root: Optional[_AVLNode] = None
         
+    def insert(self, key: float, value: float = 0.0) -> None:
+        self.root = self._insert(self.root, round(float(key), 6), float(value))
+        
+    def delete(self, key: float) -> None:
+        self.root = self._delete(self.root, round(float(key),6))
+        
     

@@ -55,4 +55,16 @@ class _AVLFrequencyTree:
                 current = current.left
         return result
     
-    
+    def has_key_in_radius(self, key: float, radius: float) -> bool:
+        key = round(float(key), 6)
+        radius = float(radius)
+        
+        left_key = self.nearest_left(key)
+        if left_key is not None and abs(left_key - key) <= radius:
+            return True
+        
+        right_key = self.nearest_right(key)
+        if right_key is not None and abs(right_key - key) <= radius:
+            return True
+        
+        return False

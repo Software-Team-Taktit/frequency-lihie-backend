@@ -29,4 +29,30 @@ class _AVLFrequencyTree:
     def delete(self, key: float) -> None:
         self.root = self._delete(self.root, round(float(key),6))
         
+    def nearest_left(self, key: float) -> Optional[float]:
+        key = round(float(key), 6)
+        current = self.root
+        result = None
+        
+        while current is not None:
+            if key < current.key:
+                current = current.left
+            else:
+                result = current.key
+                current = current.right
+        return result
+    
+    def nearest_right(self, key: float) -> Optional[float]:
+        key = round(float(key), 6)
+        current = self.root
+        result = None
+        
+        while current is not None:
+            if key < current.key:
+                current = current.right
+            else:
+                result = current.key
+                current = current.left
+        return result
+    
     

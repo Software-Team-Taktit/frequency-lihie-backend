@@ -140,4 +140,17 @@ class _AVLFrequencyTree:
     def _balance_factor(self, node: _AVLNode) -> int:
         return self._height(node.left) - self._height(node.right)
     
-    
+    def _rebalance(self, node: _AVLNode) -> _AVLNode:
+        balance = self._balance_factor(node)
+        
+        if balance > 1:
+            if self._balance_factor(node.left) < 0:
+                node.left = self._rotate_left(node.left)
+            return self._rotate_right(node)
+        
+        if balance < -1:
+            if self._balance_factor(node.right) > 0:
+                node.right = self._rotate_right(node.right)
+            return self._rotate_left(node)
+        
+        return node

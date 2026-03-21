@@ -154,3 +154,25 @@ class _AVLFrequencyTree:
             return self._rotate_left(node)
         
         return node
+    
+    def _rotate_left(self, z: _AVLNode) -> _AVLNode:
+        y = z.right
+        t2 = y.left
+        
+        y.left = z
+        z.right = t2
+        
+        self._update_height(z)
+        self._update_height(y)
+        return y
+    
+    def _rotate_right(self, z: _AVLNode) -> _AVLNode:
+        y = z.left
+        t3 = y.right
+        
+        y.right = z
+        z.left = t3
+        
+        self._update_height(z)
+        self._update_height(y)
+        return y

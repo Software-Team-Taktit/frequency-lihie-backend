@@ -3,11 +3,11 @@ from typing import Generator, Optional
 
 @dataclass
 class _AVLNode:
-    key: float
-    value: float
-    height: int = 1
-    left: Optional["_AVLNode"] = None
-    right: Optional["_AVLNode"] = None
+    key: float #frequency
+    value: float #rx_mw = potential interference
+    height: int = 1 #height of the node
+    left: Optional["_AVLNode"] = None #left son
+    right: Optional["_AVLNode"] = None #right son
 
 class _AVLFrequencyTree:
     """
@@ -21,6 +21,9 @@ class _AVLFrequencyTree:
     """
     
     def __init__(self):
+        """ 
+        building a new empty tree
+        """
         self.root: Optional[_AVLNode] = None
         
     def insert(self, key: float, value: float = 0.0) -> None:
@@ -30,6 +33,9 @@ class _AVLFrequencyTree:
         self.root = self._delete(self.root, round(float(key),6))
         
     def nearest_left(self, key: float) -> Optional[float]:
+        """
+        finding the closest key to me from the left side
+        """
         key = round(float(key), 6)
         current = self.root
         result = None
@@ -43,6 +49,9 @@ class _AVLFrequencyTree:
         return result
     
     def nearest_right(self, key: float) -> Optional[float]:
+        """
+        finding the closest key to me fron the right side
+        """
         key = round(float(key), 6)
         current = self.root
         result = None
@@ -56,6 +65,9 @@ class _AVLFrequencyTree:
         return result
     
     def has_key_in_radius(self, key: float, radius: float) -> bool:
+        """
+        Is there another frequency in the tree that is within a radius of the frequency I gave?
+        """
         key = round(float(key), 6)
         radius = float(radius)
         
@@ -70,12 +82,18 @@ class _AVLFrequencyTree:
         return False
     
     def iter_range(self, low: float, high: float) -> Generator[tuple[float, float], None, None]:
+        """
+        A function that returns all nodes whose key is between low to high
+        """
         low = round(float(low), 6)
         high = round(float(high), 6)
         yield from self._iter_range(self.root, low, high)
         
         
     def _iter_range(self, node: Optional[_AVLNode], low: float, high: float) -> Generator[tuple[float, float], None, None]:
+        """
+        The internal version of the function that actually does the work reccursively
+        """
         if node is None: return
         
         if low < node.key:
@@ -88,6 +106,9 @@ class _AVLFrequencyTree:
             yield from self._iter_range(node.right, low, high)
             
     def _insert(self, node: Optional[_AVLNode], key: float, value: float) -> _AVLNode:
+        """
+        The internal recursive insert function
+        """
         if node is None: return _AVLNode(key = key, value = value)
         
         if key < node.key:
@@ -102,6 +123,9 @@ class _AVLFrequencyTree:
         return self._rebalance(node)
     
     def _delete(self, node: Optional[_AVLNode], key: float) -> Optional[_AVLNode]:
+        """
+        The internal recursive delete function
+        """
         if node is None:
             return None
 
@@ -125,6 +149,9 @@ class _AVLFrequencyTree:
         return self._rebalance(node)
     
     def _min_value_node(self, node: _AVLNode) -> _AVLNode:
+        """
+        finding the smallest node in a subtree
+        """
         current = node
         while current.left is not None:
             current = current.left
@@ -138,9 +165,15 @@ class _AVLFrequencyTree:
         node.height = 1 + max(self._height(node.left), self._height(node.right))
         
     def _balance_factor(self, node: _AVLNode) -> int:
+        """
+        returns whether the tree is balanced or not
+        """
         return self._height(node.left) - self._height(node.right)
     
     def _rebalance(self, node: _AVLNode) -> _AVLNode:
+        """
+        The function that balances the tree
+        """
         balance = self._balance_factor(node)
         
         if balance > 1:

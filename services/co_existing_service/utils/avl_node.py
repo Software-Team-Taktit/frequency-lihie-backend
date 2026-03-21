@@ -87,4 +87,20 @@ class _AVLFrequencyTree:
         if node.key < high:
             yield from self.iter_range(node.right, low, high)
             
+    def _insert(self, node: Optional[_AVLNode], key: float, value: float) -> _AVLNode:
+        if node is None: return _AVLNode(key = key, value = value)
+        
+        if key < node.key:
+            node.left = self._insert(node.left, key, value)
+        elif key > node.key:
+            node.right = self._insert(node.right, key, value)
+        else:
+            node.value += value
+            return node
+        
+        self._update_height(node)
+        return self._rebalance(node)
+    
+    
+            
     

@@ -101,6 +101,27 @@ class _AVLFrequencyTree:
         self._update_height(node)
         return self._rebalance(node)
     
-    
+    def _delete(self, node: Optional[_AVLNode], key: float) -> Optional[_AVLNode]:
+        if node is None: return None
+        
+        if key < node.key:
+            node.left = self._delete(node.left, key)
+        elif key > node.key:
+            node.right = self._delete(node.right, key)
+        else:
+            #case 1: no left son
+            if node.left is None:
+                return node.right
+            #case 2: no right son
+            if node.right is None:
+                return node.left
+            #case 3: there is two sons
+            successor: self._min_value_node(node.right)
+            node.key = successor.key
+            node.value = successor.value
+            node.right = self.delete(node.right, successor.key)
             
+        self._update_height(node)
+        return self.rebalance(node)
+    
     

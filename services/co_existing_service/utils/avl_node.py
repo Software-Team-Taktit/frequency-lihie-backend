@@ -130,5 +130,8 @@ class _AVLFrequencyTree:
             current = current.left
         return current
     
+    @staticmethod
+    def _height(node: Optional[_AVLNode]) -> int:
+        return node.height if node is not None else 0
     
     

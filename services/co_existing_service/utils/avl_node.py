@@ -116,12 +116,19 @@ class _AVLFrequencyTree:
             if node.right is None:
                 return node.left
             #case 3: there is two sons
-            successor: self._min_value_node(node.right)
+            successor = self._min_value_node(node.right) 
             node.key = successor.key
             node.value = successor.value
             node.right = self.delete(node.right, successor.key)
             
         self._update_height(node)
         return self.rebalance(node)
+    
+    def _min_value_node(self, node: _AVLNode) -> _AVLNode:
+        current = node
+        while current.left is not None:
+            current = current.left
+        return current
+    
     
     

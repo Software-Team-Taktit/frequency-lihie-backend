@@ -134,4 +134,10 @@ class _AVLFrequencyTree:
     def _height(node: Optional[_AVLNode]) -> int:
         return node.height if node is not None else 0
     
+    def _update_height(self, node: _AVLNode) -> None:
+        node.height = 1 + max(self._height(node.left), self._height(node.right))
+        
+    def _balance_factor(self, node: _AVLNode) -> int:
+        return self._height(node.left) - self._height(node.right)
+    
     

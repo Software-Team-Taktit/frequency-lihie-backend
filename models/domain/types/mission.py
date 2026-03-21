@@ -25,8 +25,12 @@ class Mission(BaseObject):
         
         if "created_at" not in data:
             data["created_at"] = utc_now()
-            
-        if data.get("time") and data.get("expires_at") is None:
+
+        if data.get("time") is not None and data.get("expires_at") is None:
             data["expires_at"] = data["created_at"] + timedelta(minutes=data["time"])
+
+        if "is_active" not in data:
+            data["is_active"] = True
+
         
         super().__init__(**data)

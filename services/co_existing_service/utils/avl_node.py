@@ -48,7 +48,7 @@ class _AVLFrequencyTree:
         result = None
         
         while current is not None:
-            if key < current.key:
+            if key > current.key:
                 current = current.right
             else:
                 result = current.key
@@ -85,7 +85,7 @@ class _AVLFrequencyTree:
             yield (node.key, node.value)
             
         if node.key < high:
-            yield from self.iter_range(node.right, low, high)
+            yield from self._iter_range(node.right, low, high)
             
     def _insert(self, node: Optional[_AVLNode], key: float, value: float) -> _AVLNode:
         if node is None: return _AVLNode(key = key, value = value)

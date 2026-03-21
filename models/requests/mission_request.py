@@ -8,6 +8,7 @@ class MissionCreateRequest(BaseModel):
     were already calculated by the Co-existing Service.
     """
     name: str = Field(..., min_length=2, max_length=80)
+    time: int = Field(..., gt=0)
     coordinate: Coordinate
     freq_mhz: float
     tx_power_dbm: float
@@ -19,6 +20,7 @@ class MissionUpdateRequest(BaseModel):
     All fields are optional.
     """
     name: str | None = Field(None, min_length=2, max_length=80)
+    time: int | None = Field(None, gt=0)
     coordinate: Coordinate | None = None
     freq_mhz: float | None = None
     tx_power_dbm: float | None = None

@@ -1,5 +1,4 @@
 import math
-from bisect import bisect_left, bisect_right
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
@@ -11,6 +10,7 @@ from services.utils.helpers import clamp_positive, dbm_to_mw, noise_floor_dbm
 from services.co_existing_service.propagation_factory import PropagationFactory
 from services.models.generic_propagation_dto import GenericPropagationDTO
 
+from services.co_existing_service.utils.avl_node import _AVLFrequencyTree
 
 # scan config
 # ---------------------
@@ -32,13 +32,6 @@ class CoarseFineScanConfig:
     link_distance_km: float = 1.0
     path_loss_weight: float = 1.0
     interference_weight: float = 1.0
-
-
-@dataclass(frozen=True)
-class MissionInfluence:
-    freq_mhz: float
-    rx_mw: float
-
 
 # frequency scanner
 # ---------------------
@@ -103,9 +96,9 @@ class FrequencyScanner:
         request: FrequencyRequest,
         platform: Platform,
         missions: Iterable[Mission],
-    ) -> List[MissionInfluence]:
+    ) -> _AVLFrequencyTree:
         model_type = self.propagation.get_model_type(request.enviroment_type)
-        indexed: List[MissionInfluence] = []
+        tree = _AVLFrequencyTree()
 
         for mission in missions:
             d_km = self.propagation.distance_km(mission.coordinate, request.coordinate)
@@ -119,16 +112,24 @@ class FrequencyScanner:
 
             pl_db = self.propagation.path_loss_db(dto)
             p_rx_dbm = mission.tx_power_dbm - pl_db
-            indexed.append(
-                MissionInfluence(
-                    freq_mhz=round(float(mission.freq_mhz), 6),
-                    rx_mw=float(dbm_to_mw(p_rx_dbm)),
-                )
+            
+            tree.insert(
+                key= round(float(mission.freq_mhz), 6),
+                value= float(dbm_to_mw(p_rx_dbm)),
             )
 
-        indexed.sort(key=lambda item: item.freq_mhz)
-        return indexed
+        return tree
 
+    def _build_used_freqs_index(self, missions: Iterable[Mission]) -> _AVLFrequencyTree:
+        tree = _AVLFrequencyTree()
+        
+        for mission in missions:
+            try:
+                tree.insert(round(float(mission.freq_mhz), 6), 0.0)
+            except Exception:
+                pass
+        return tree
+    
     def _interference_radius_mhz(
         self,
         interference_window_mhz: float,
@@ -140,8 +141,7 @@ class FrequencyScanner:
 
     def _interference_mw_from_index(
         self,
-        mission_index: List[MissionInfluence],
-        mission_freqs: List[float],
+        mission_tree: _AVLFrequencyTree,
         candidate_freq_mhz: float,
         interference_window_mhz: float,
     ) -> float:
@@ -149,14 +149,11 @@ class FrequencyScanner:
         radius = self._interference_radius_mhz(interference_window_mhz)
         candidate = round(float(candidate_freq_mhz), 6)
 
-        left = bisect_left(mission_freqs, candidate - radius)
-        right = bisect_right(mission_freqs, candidate + radius)
-
         interf_mw = 0.0
-        for item in mission_index[left:right]:
-            delta = abs(item.freq_mhz - candidate)
+        for freq_mhz, aggregated_rx_mw in mission_tree.iter_range(candidate - radius, candidate + radius):
+            delta = abs(freq_mhz - candidate)
             weight = math.exp(-(delta**2) / (2 * (sigma**2)))
-            interf_mw += weight * item.rx_mw
+            interf_mw += weight * aggregated_rx_mw
 
         return float(interf_mw)
 
@@ -239,8 +236,7 @@ class FrequencyScanner:
         self,
         request: FrequencyRequest,
         platform: Platform,
-        mission_index: List[MissionInfluence],
-        mission_freqs: List[float],
+        mission_tree: _AVLFrequencyTree,
         candidate_freq_mhz: float,
         config: CoarseFineScanConfig,
     ) -> float:
@@ -253,8 +249,7 @@ class FrequencyScanner:
 
         noise_mw = dbm_to_mw(noise_floor_dbm(platform))
         interf_mw = self._interference_mw_from_index(
-            mission_index=mission_index,
-            mission_freqs=mission_freqs,
+            mission_tree=mission_tree,
             candidate_freq_mhz=float(candidate_freq_mhz),
             interference_window_mhz=float(config.interference_window_mhz),
         )
@@ -279,97 +274,82 @@ class FrequencyScanner:
     ) -> Optional[float]:
         best_freq = None
         best_score = float("inf")
-
+        
         EPS = 1e-6
         mission_list = list(missions)
-        mission_index = self._build_mission_index(
+        
+        mission_tree = self._build_mission_index(
             request=request,
             platform=platform,
-            missions=mission_list,
+            missions=mission_list
         )
-        mission_freqs = [item.freq_mhz for item in mission_index]
-
-        used_freqs = []
-        for mission in mission_list:
-            try:
-                used_freqs.append(round(float(mission.freq_mhz), 6))
-            except Exception:
-                pass
-        used_freqs.sort()
-
+        
+        used_freqs_tree = self._build_used_freqs_index(missions=mission_list)
+        
         def is_blocked(f: float) -> bool:
             f = round(float(f), 6)
             guard = float(getattr(config, "guard_mhz", 0.0) or 0.0)
             radius = guard + EPS if guard > 0 else EPS
-            idx = bisect_left(used_freqs, f)
-
-            if idx < len(used_freqs) and abs(used_freqs[idx] - f) <= radius:
-                return True
-
-            if idx > 0 and abs(used_freqs[idx - 1] - f) <= radius:
-                return True
-
-            return False
-
+            return used_freqs_tree.has_key_in_radius(f, radius=radius)
+        
         def safe_score(f: float) -> float:
             s = self._quality_score_from_index(
                 request=request,
                 platform=platform,
-                mission_index=mission_index,
-                mission_freqs=mission_freqs,
+                mission_tree=mission_tree,
                 candidate_freq_mhz=float(f),
                 config=config,
             )
             if s is None or math.isnan(s) or math.isinf(s):
                 return float("inf")
             return float(s)
-
-        def first_unblocked_in_range() -> float:
+        
+        def first_unblocked_in_range() -> Optional[float]:
             for band in config.bands:
                 freqs = self._generate_freqs(band.start_mhz, band.end_mhz, config.coarse_step_mhz)
                 for f in freqs:
                     if not is_blocked(f):
                         return float(f)
             return None
-
+        
         for band in config.bands:
             coarse_freqs = self._generate_freqs(band.start_mhz, band.end_mhz, config.coarse_step_mhz)
             coarse_scored = []
-
+            
             for f in coarse_freqs:
                 if is_blocked(f):
                     continue
-
+                
                 score = safe_score(f)
                 if score == float("inf"):
                     continue
-
+                
                 coarse_scored.append((score, f))
-
+                
             if not coarse_scored:
                 continue
-
+            
             coarse_scored.sort(key=lambda x: x[0])
             top = coarse_scored[: max(1, config.top_k)]
-
+            
             for _, center_f in top:
                 fine_start = max(band.start_mhz, center_f - config.fine_window_mhz)
                 fine_end = min(band.end_mhz, center_f + config.fine_window_mhz)
                 fine_freqs = self._generate_freqs(fine_start, fine_end, config.fine_step_mhz)
-
+                
                 for f in fine_freqs:
                     if is_blocked(f):
                         continue
-
+                    
                     score = safe_score(f)
                     if score == float("inf"):
                         continue
-
+                    
                     if score < best_score:
                         best_score = score
                         best_freq = f
-
+                        
         if best_freq is None:
             return first_unblocked_in_range()
-
+        
         return float(best_freq)

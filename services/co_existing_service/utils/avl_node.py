@@ -68,3 +68,23 @@ class _AVLFrequencyTree:
             return True
         
         return False
+    
+    def iter_range(self, low: float, high: float) -> Generator[tuple[float, float], None, None]:
+        low = round(float(low), 6)
+        high = round(float(high), 6)
+        yield from self._iter_range(self.root, low, high)
+        
+        
+    def _iter_range(self, node: Optional[_AVLNode], low: float, high: float) -> Generator[tuple[float, float], None, None]:
+        if node is None: return
+        
+        if low < node.key:
+            yield from self._iter_range(node.left, low, high)
+            
+        if low <= node.key <= high:
+            yield (node.key, node.value)
+            
+        if node.key < high:
+            yield from self.iter_range(node.right, low, high)
+            
+    

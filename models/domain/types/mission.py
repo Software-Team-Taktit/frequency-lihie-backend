@@ -10,6 +10,7 @@ def utc_now() -> datetime:
 
 class Mission(BaseObject):
     name: str = Field(..., min_length=2, max_length=80)
+    time: int = Field(..., gt=0)
     coordinate: Coordinate
     freq_mhz: float
     tx_power_dbm: float

@@ -13,16 +13,21 @@ class MissionRepository(MongoRepository[Mission]):
     async def _refresh_active_status(self, mission: Mission) -> Mission:
         if mission.expires_at is None:
             return mission
-        
+
+        expires_at = mission.expires_at
+
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+
         now = datetime.now(timezone.utc)
-        
-        if mission.is_active and now >= mission.expires_at:
+
+        if mission.is_active and now >= expires_at:
             mission.is_active = False
             await self.collection.update_one(
                 {"id": mission.id},
                 {"$set": {"is_active": False}}
             )
-            
+
         return mission
     
     async def get_all(self):

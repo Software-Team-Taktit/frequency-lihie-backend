@@ -5,7 +5,6 @@ from repositories.types_repositories.user_repository import UserRepository
 from fastapi import Depends, HTTPException, APIRouter,Response, Request
 from starlette import status
 from deps.auth import get_current_user
-from repositories.types_repositories.session_repository import SessionRepository
 
 def get_user_repo() -> UserRepository:
     return UserRepository()

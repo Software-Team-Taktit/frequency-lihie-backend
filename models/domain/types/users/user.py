@@ -1,4 +1,3 @@
-from uuid import uuid4
 from models.domain.base_object import BaseObject
 from models.enums.object_type import ObjectType
 

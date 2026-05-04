@@ -1,6 +1,6 @@
 import uuid
 from workers.number_he import number_to_heb_string
-import os, json, sys, pika, soundfile as sf, torch
+import os, json, sys, time, pika, soundfile as sf, torch
 from transformers import AutoProcessor, VitsModel
 import traceback
 
@@ -50,8 +50,39 @@ def synthesize(text: str, out_path: str):
     ensure_dirs(out_path)
     sf.write(out_path, wav, 16000)
     
+def connect_to_rabbitmq(max_retries: int = 30, delay_seconds: int = 2):
+    last_error = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f" [*] Connecting to RabbitMQ at '{RMQ_HOST}'... attempt {attempt}/{max_retries}")
+
+            conn = pika.BlockingConnection(
+                pika.ConnectionParameters(
+                    host=RMQ_HOST,
+                    port=5672,
+                    heartbeat=600,
+                    blocked_connection_timeout=300
+                )
+            )
+
+            print(" [✓] Connected to RabbitMQ")
+            return conn
+
+        except pika.exceptions.AMQPConnectionError as e:
+            last_error = e
+            print(
+                f" [!] RabbitMQ is not ready yet. Retrying in {delay_seconds} seconds...",
+                file=sys.stderr
+            )
+            time.sleep(delay_seconds)
+
+    raise RuntimeError(
+        f"Could not connect to RabbitMQ after {max_retries} attempts"
+    ) from last_error    
+
 def main():
-    conn = pika.BlockingConnection(pika.ConnectionParameters(host=RMQ_HOST))
+    conn = connect_to_rabbitmq()
     ch = conn.channel()
     ch.queue_declare(queue=QUEUE, durable=True)
     ch.basic_qos(prefetch_count=1)

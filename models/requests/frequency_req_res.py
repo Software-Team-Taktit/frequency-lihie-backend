@@ -11,6 +11,7 @@ class FrequencyRequest(BaseModel):
     coordinate: Coordinate
     enviroment_type: EnviromentType
     platform_id: str
+    exclude_mission_id: str | None = None
     
 class FrequencyResponse(BaseModel):
     freq_mhz: float

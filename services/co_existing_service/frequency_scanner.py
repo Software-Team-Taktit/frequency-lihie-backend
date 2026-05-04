@@ -73,7 +73,11 @@ class FrequencyScanner:
             if weight < 1e-9:
                 continue
 
-            d_km = self.propagation.distance_km(m.coordinate, request.coordinate)
+            d_km = clamp_positive(
+                self.propagation.distance_km(m.coordinate, request.coordinate),
+                0.001   
+            )
+            
             model_type = self.propagation.get_model_type(request.enviroment_type)
 
             dto = GenericPropagationDTO(
@@ -101,7 +105,11 @@ class FrequencyScanner:
         tree = _AVLFrequencyTree()
 
         for mission in missions:
-            d_km = self.propagation.distance_km(mission.coordinate, request.coordinate)
+            d_km = clamp_positive(
+                self.propagation.distance_km(mission.coordinate, request.coordinate),
+                0.001
+            )
+            
             dto = GenericPropagationDTO(
                 model_type=model_type,
                 freq_mhz=float(mission.freq_mhz),
@@ -157,27 +165,6 @@ class FrequencyScanner:
 
         return float(interf_mw)
 
-    def _interference_score_mw(
-        self,
-        request: FrequencyRequest,
-        platform: Platform,
-        missions: Iterable[Mission],
-        candidate_freq_mhz: float,
-        interference_window_mhz: float,
-    ) -> float:
-        """
-        Interference + Noise (mW) used for frequency scoring.
-        This keeps the existing scanning behavior unchanged.
-        """
-        noise_mw = dbm_to_mw(noise_floor_dbm(platform))
-        interf_mw = self._interference_mw(
-            request=request,
-            platform=platform,
-            missions=missions,
-            candidate_freq_mhz=candidate_freq_mhz,
-            interference_window_mhz=interference_window_mhz,
-        )
-        return float(interf_mw) + float(noise_mw)
 
     def _link_path_loss_db(
         self,
@@ -197,40 +184,6 @@ class FrequencyScanner:
         )
         return float(self.propagation.path_loss_db(dto))
 
-    def _quality_score(
-        self,
-        request: FrequencyRequest,
-        platform: Platform,
-        missions: Iterable[Mission],
-        candidate_freq_mhz: float,
-        config: CoarseFineScanConfig,
-    ) -> float:
-        """Single score: lower is better."""
-        pl_db = self._link_path_loss_db(
-            request=request,
-            platform=platform,
-            candidate_freq_mhz=candidate_freq_mhz,
-            link_distance_km=config.link_distance_km,
-        )
-
-        interf_mw = self._interference_score_mw(
-            request=request,
-            platform=platform,
-            missions=missions,
-            candidate_freq_mhz=float(candidate_freq_mhz),
-            interference_window_mhz=float(config.interference_window_mhz),
-        )
-
-        interf_mw = float(interf_mw)
-        if interf_mw <= 0 or math.isnan(interf_mw) or math.isinf(interf_mw):
-            return float("inf")
-
-        interf_dbm = 10.0 * math.log10(interf_mw)
-
-        return (
-            float(config.path_loss_weight) * float(pl_db)
-            + float(config.interference_weight) * float(interf_dbm)
-        )
 
     def _quality_score_from_index(
         self,

@@ -28,6 +28,12 @@ class FrequencyService:
     async def calculate(self, request: FrequencyRequest) -> FrequencyResponse:
         platform = await self.platform_repo.get_by_id(request.platform_id)
         missions = await self.mission_repo.get_all()
+        
+        if request.exclude_mission_id:
+            missions = [
+                mission for mission in missions
+                if getattr(mission, "id", None) != request.exclude_mission_id
+            ]
 
         approved = await self.freq_range_repo.get()
         min_mhz = float(approved.min_mhz)

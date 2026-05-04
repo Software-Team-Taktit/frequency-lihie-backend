@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+motor
+pymongo
+pika
+python-jose[cryptography]
+soundfile
+torch
+transformers
+python-multipart

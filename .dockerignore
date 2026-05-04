@@ -1,0 +1,37 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual envs
+venv/
+.venv/
+env/
+vtts/
+**/venv/
+**/.venv/
+**/env/
+**/vtts/
+
+# קבצי אודיו שנוצרים ע"י ה-TTS
+static/tts/*
+!static/tts/.gitkeep
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+
+# Git
+.git/
+.gitignore

@@ -31,6 +31,23 @@ def mw_to_dbm(mw: float) -> float:
     mw = clamp_positive(mw, 1e-20) 
     return 10.0 * math.log10(mw)
 
+def dbm_to_watt(dbm: float) -> float:
+    return dbm_to_mw(dbm) / 1000.0
+
+def watt_to_dbm(watt: float) -> float:
+    watt = clamp_positive(watt, 1e-20) 
+    return mw_to_dbm(watt * 1000.0)
+
+def tx_power_level_from_watt(watt: float) -> int:
+    if watt < 1:
+        return 1 #low
+    if watt < 10:
+        return 2 #medium
+    return 3 #high
+
+def tx_power_level_from_dbm(dbm: float) -> int:
+    return tx_power_level_from_watt(dbm_to_watt(dbm))
+
 def noise_floor_dbm(platform: Platform) -> float:
     # -174 dBm/Hz + 10log10(BW_Hz) + NF
     bw_hz = clamp_positive(platform.bw_khz * 1000.0, 1.0)

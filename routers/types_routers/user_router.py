@@ -1,10 +1,7 @@
 from ..base_crud_router import BaseCrudRouter
 from models.domain.types.users.user import User
-from models.requests.user_request import UserCreateRequest, UserUpdateRequest, UserLogInRequest
+from models.requests.user_request import UserCreateRequest, UserUpdateRequest
 from repositories.types_repositories.user_repository import UserRepository
-from fastapi import Depends, HTTPException, APIRouter,Response, Request
-from starlette import status
-from deps.auth import get_current_user
 
 def get_user_repo() -> UserRepository:
     return UserRepository()

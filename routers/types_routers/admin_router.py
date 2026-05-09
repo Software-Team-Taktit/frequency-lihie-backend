@@ -1,4 +1,3 @@
-from models.enums.object_type import ObjectType
 from ..base_crud_router import BaseCrudRouter
 from models.domain.types.users.admin import Admin
 from models.requests.admin_request import AdminCreateRequest, AdminUpdateRequest

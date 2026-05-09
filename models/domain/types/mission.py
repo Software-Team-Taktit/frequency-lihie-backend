@@ -15,6 +15,7 @@ class Mission(BaseObject):
     freq_mhz: float
     tx_power_dbm: float
     platform_id: str
+    owner_id: str
     
     is_active: bool = True
     created_at: datetime = Field(default_factory=utc_now)

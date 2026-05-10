@@ -26,6 +26,9 @@ def can_modify_mission(current_user, mission: Mission) -> bool:
     if is_admin(current_user):
         return True
 
+    if not mission.owner_id:
+        return False
+
     return str(mission.owner_id) == str(current_user.id)
 
 

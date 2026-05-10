@@ -10,6 +10,9 @@ class MissionRepository(MongoRepository[Mission]):
     async def exists_by_platform_id(self, platform_id: str):
         return await self.collection.count_documents({"platform_id": platform_id}, limit = 1) > 0
     
+    async def exists_by_owner_id(self, owner_id: str) -> bool:
+        return await self.collection.count_documents({"owner_id": str(owner_id)}, limit = 1) > 0
+    
     async def _refresh_active_status(self, mission: Mission) -> Mission:
         if mission.expires_at is None:
             return mission

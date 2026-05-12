@@ -10,3 +10,5 @@ soundfile
 torch
 transformers
 python-multipart
+paramiko
+requests

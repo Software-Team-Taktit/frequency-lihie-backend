@@ -1,13 +1,27 @@
+import shlex
 import uuid
 from workers.number_he import number_to_heb_string
 import os, json, sys, time, pika, soundfile as sf, torch
+import paramiko
+from pathlib import Path
 from transformers import AutoProcessor, VitsModel
 import traceback
+import requests
+from services.utils.helpers import tx_power_level_from_dbm
 
 QUEUE = os.getenv("TTS_QUEUE", "tts_he_mms")
 RMQ_HOST = os.getenv("RABBIT_HOST", "localhost")
 MODEL_ID = "facebook/mms-tts-heb"
 STATIC_DIR = os.getenv("STATIC_DIR","static")
+RPI_HOST = os.getenv("RPI_HOST", "raspberrypi4.local")
+RPI_USER = os.getenv("RPI_USER", "rpi")
+RPI_PASSWORD = os.getenv("RPI_PASSWORD", "")
+RPI_REMOTE_DIR = os.getenv("RPI_REMOTE_DIR", "/home/rpi/mk_transmit/received_wavs")
+RPI_PLAY_AFTER_UPLOAD = os.getenv("RPI_PLAY_AFTER_UPLOAD", "true").lower() == "true"
+RPI_RECEIVER_URL = os.getenv(
+    "RPI_RECEIVER_URL",
+    f"http://{RPI_HOST}:8001/receive-transmission"
+)
 
 def ensure_dirs(path:str): os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -81,6 +95,75 @@ def connect_to_rabbitmq(max_retries: int = 30, delay_seconds: int = 2):
         f"Could not connect to RabbitMQ after {max_retries} attempts"
     ) from last_error    
 
+def send_wav_to_rpi(local_wav_path: str) -> str:
+    local_path = Path(local_wav_path)
+    
+    if not local_path.exists():
+        raise FileNotFoundError(f"Local WAV file not found: {local_wav_path}")
+    
+    if local_path.suffix.lower() != ".wav":
+        raise ValueError(f"File must be a WAV file: {local_wav_path}")
+    
+    remote_path = f"{RPI_REMOTE_DIR}/{local_path.name}"
+    
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        ssh.connect(
+            hostname=RPI_HOST,
+            username=RPI_USER,
+            password=RPI_PASSWORD if RPI_PASSWORD else None,
+            timeout=10
+        )
+        
+        ssh.exec_command(f"mkdir -p {shlex.quote(RPI_REMOTE_DIR)}")
+        
+        sftp = ssh.open_sftp()
+        sftp.put(str(local_path), remote_path)
+        sftp.close()
+        
+        print(f" [✓] Uploaded WAV to RPI: {remote_path}")
+        
+        if RPI_PLAY_AFTER_UPLOAD:
+            command = f"nohup aplay {shlex.quote(remote_path)} > /tmp/tts_play.log 2>&1 &"
+            ssh.exec_command(command)
+            print(f" [✓] Sent play command to RPI for: {remote_path}")
+        
+        return remote_path
+    
+    finally:
+        ssh.close()
+
+def format_freq_for_mk(freq_hz: float) -> str:
+    freq_khz = int(round(float(freq_hz) / 1000.0))
+
+    if freq_khz < 0 or freq_khz > 99999:
+        raise ValueError(f"Frequency does not fit MMKKK format: {freq_khz}")
+
+    return f"{freq_khz:05d}"
+
+def send_transmission_json_to_rpi(freq_hz: float, tx_power_dbm: float | None, remote_wav_path: str):
+    tx_power_level = tx_power_level_from_dbm(tx_power_dbm) if tx_power_dbm is not None else None
+    
+    payload = {
+        "freq": format_freq_for_mk(freq_hz),
+        "tx_power": tx_power_level,
+        "wav_path": remote_wav_path
+    }
+    
+    response = requests.post(
+        RPI_RECEIVER_URL,
+        json=payload,
+        timeout=10
+    )
+    
+    if response.status_code >= 400:
+        raise RuntimeError(f"RPI receiver failed: {response.status_code} {response.text}")
+    
+    print(f" [✓] Sent JSON to RPI: {payload}")
+    return response.json()
+
 def main():
     conn = connect_to_rabbitmq()
     ch = conn.channel()
@@ -109,7 +192,18 @@ def main():
             
             synthesize(text, out_path)
             
+            remote_path = send_wav_to_rpi(out_path)
+            
+            rpi_response = send_transmission_json_to_rpi(
+                freq_hz=freq_hz,
+                tx_power_dbm=tx_power_dbm,
+                remote_wav_path=remote_path
+            )
+            
             print(f" [✓] {text} -> {out_path}")
+            print(f" [✓] Uploaded to RPI at: {remote_path}")
+            print(f" [✓] RPI response: {rpi_response}")
+            
             ch_.basic_ack(delivery_tag=method.delivery_tag)
             
         except Exception as e:

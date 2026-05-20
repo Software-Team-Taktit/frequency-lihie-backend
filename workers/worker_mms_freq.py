@@ -11,7 +11,7 @@ from services.utils.helpers import tx_power_level_from_dbm
 
 QUEUE = os.getenv("TTS_QUEUE", "tts_he_mms")
 RMQ_HOST = os.getenv("RABBIT_HOST", "localhost")
-MODEL_ID = "facebook/mms-tts-heb"
+MODEL_ID = os.getenv("MODEL_PATH", "./local_mms_model")
 STATIC_DIR = os.getenv("STATIC_DIR","static")
 RPI_HOST = os.getenv("RPI_HOST", "raspberrypi4.local")
 RPI_USER = os.getenv("RPI_USER", "rpi")

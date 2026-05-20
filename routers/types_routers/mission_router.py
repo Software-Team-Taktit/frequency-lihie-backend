@@ -3,7 +3,7 @@ from starlette import status
 
 from ..base_crud_router import BaseCrudRouter
 from deps.auth import get_current_user
-from models.domain.types.mission import Mission
+from models.domain.types.mission import Mission, utc_now
 from models.requests.mission_request import MissionCreateRequest, MissionUpdateRequest
 from repositories.types_repositories.mission_repository import MissionRepository
 
@@ -155,6 +155,7 @@ async def complete_mission(
 
     updated_data = existing.model_dump()
     updated_data["is_active"] = False
+    updated_data["deactivated_at"] = utc_now() 
 
     updated_mission = Mission(**updated_data)
     updated = await repo.update_item(item_id, updated_mission)

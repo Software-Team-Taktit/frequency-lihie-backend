@@ -28,6 +28,10 @@ class FrequencyService:
     async def calculate(self, request: FrequencyRequest) -> FrequencyResponse:
         platform = await self.platform_repo.get_by_id(request.platform_id)
         missions = await self.mission_repo.get_all()
+        missions = [
+            mission for mission in missions
+            if getattr(mission, "is_active", False) is True
+        ]
         
         if request.exclude_mission_id:
             missions = [

@@ -20,6 +20,7 @@ class Mission(BaseObject):
     is_active: bool = True
     created_at: datetime = Field(default_factory=utc_now)
     expires_at: datetime | None = None
+    deactivated_at: datetime | None = None
     
     def __init__(self, **data):
         data["id"] = data.get("id", str(uuid4()))
@@ -34,5 +35,7 @@ class Mission(BaseObject):
         if "is_active" not in data:
             data["is_active"] = True
 
+        if data.get("is_active") is False and data.get("deactivated_at") is None:
+            data["deactivated_at"] = utc_now()
         
         super().__init__(**data)

@@ -101,6 +101,7 @@ class FrequencyService:
                 path_loss_db= float(path_loss_db),
                 interference_mw=float(interference_mw),
                 sinr_required_db=float(platform.min_sinr_required_db),
+                selected_frequency=float(best_freq),
                 config=NewtonConfig(
                     tol_db=0.1,
                     max_iter=20,

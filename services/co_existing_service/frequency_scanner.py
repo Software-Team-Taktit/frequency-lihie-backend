@@ -90,7 +90,12 @@ class FrequencyScanner:
 
             pl_db = self.propagation.path_loss_db(dto)
 
-            p_rx_dbm = m.tx_power_dbm - pl_db
+            p_rx_dbm = (
+                float(m.tx_power_dbm)
+                + float(platform.tx_gain)
+                + float(platform.rx_gain)
+                - float(pl_db)
+            )
             interf_mw += weight * dbm_to_mw(p_rx_dbm)
 
         return float(interf_mw)
@@ -119,8 +124,13 @@ class FrequencyScanner:
             )
 
             pl_db = self.propagation.path_loss_db(dto)
-            p_rx_dbm = mission.tx_power_dbm - pl_db
-            
+            p_rx_dbm = (
+                float(mission.tx_power_dbm)
+                + float(platform.tx_gain)
+                + float(platform.rx_gain)
+                - float(pl_db)
+            )
+
             tree.insert(
                 key= round(float(mission.freq_mhz), 6),
                 value= float(dbm_to_mw(p_rx_dbm)),

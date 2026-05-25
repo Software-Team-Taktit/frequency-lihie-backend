@@ -25,6 +25,33 @@ class FrequencyService:
         self.scanner = scanner
         self.config = config
 
+    async def _load_platforms_by_id(self, current_platform, missions):
+        platforms_by_id = {
+            str(current_platform.id): current_platform
+        }
+
+        platform_ids = {
+            str(getattr(mission, "platform_id"))
+            for mission in missions
+            if getattr(mission, "platform_id", None) is not None
+        }
+
+        for platform_id in platform_ids:
+            if platform_id in platforms_by_id:
+                continue
+
+            try:
+                mission_platform = await self.platform_repo.get_by_id(platform_id)
+            except HTTPException as e:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"משימה קיימת מצביעה על פלטפורמה שלא קיימת: {platform_id}",
+                ) from e
+
+            platforms_by_id[str(mission_platform.id)] = mission_platform
+
+        return platforms_by_id
+
     async def calculate(self, request: FrequencyRequest) -> FrequencyResponse:
         platform = await self.platform_repo.get_by_id(request.platform_id)
         missions = await self.mission_repo.get_all()
@@ -41,6 +68,11 @@ class FrequencyService:
                 if getattr(mission, "id", None) != request.exclude_mission_id
             ]
 
+        platforms_by_id = await self._load_platforms_by_id(
+            current_platform=platform,
+            missions=missions,
+        )
+
         approved = await self.freq_range_repo.get()
         min_mhz = float(approved.min_mhz)
         max_mhz = float(approved.max_mhz)
@@ -53,7 +85,8 @@ class FrequencyService:
             fine_window_mhz=self.config.fine_window_mhz,
             top_k=self.config.top_k,
             interference_window_mhz=self.config.interference_window_mhz,
-            guard_mhz=self.config.guard_mhz,
+            guard_mhz=0.0,
+            safety_gap_mhz=float(getattr(self.config, "safety_gap_mhz", 0.05)),
             link_distance_km=self.config.link_distance_km,
             path_loss_weight=self.config.path_loss_weight,
             interference_weight=self.config.interference_weight,
@@ -64,6 +97,7 @@ class FrequencyService:
             platform=platform,
             missions=missions,
             config=runtime_config,
+            platforms_by_id=platforms_by_id,
         )
 
         if best_freq is None:
@@ -85,7 +119,8 @@ class FrequencyService:
             platform=platform,
             missions=missions,
             candidate_freq_mhz=float(best_freq),
-            interference_window_mhz=float(runtime_config.interference_window_mhz)
+            interference_window_mhz=float(runtime_config.interference_window_mhz),
+            platforms_by_id=platforms_by_id,
         )
         
         print("best_freq:", best_freq)

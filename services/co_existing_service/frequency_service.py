@@ -116,11 +116,4 @@ class FrequencyService:
                 detail=f"נכשל חישוב עוצמת שידור (Newton-Raphson): {str(e)}",
             )
         
-        freq_hz = float(best_freq) * 1e6
-        publish_tts_result(
-            is_freq=True,
-            freq_hz=freq_hz,
-            tx_power_dbm=float(tx_power_dbm),
-        )
-        
         return FrequencyResponse(freq_mhz=float(best_freq), tx_power_dbm=round(float(tx_power_dbm)))

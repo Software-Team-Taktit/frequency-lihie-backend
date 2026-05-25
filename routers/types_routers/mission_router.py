@@ -6,6 +6,8 @@ from deps.auth import get_current_user
 from models.domain.types.mission import Mission, utc_now
 from models.requests.mission_request import MissionCreateRequest, MissionUpdateRequest
 from repositories.types_repositories.mission_repository import MissionRepository
+from deps.rabbitmq import publish_tts_result
+
 
 
 def get_mission_repo() -> MissionRepository:
@@ -62,6 +64,13 @@ async def create_mission(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="couldnt create Mission",
         )
+    
+    freq_hz = saved.freq_mhz * 1e6
+    publish_tts_result(
+        is_freq=True,
+        freq_hz=freq_hz,
+        tx_power_dbm=float(saved.tx_power_dbm),
+    )
 
     return saved.model_dump()
 

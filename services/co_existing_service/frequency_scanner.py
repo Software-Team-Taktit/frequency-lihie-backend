@@ -23,7 +23,7 @@ class Band:
 @dataclass(frozen=True)
 class CoarseFineScanConfig:
     bands: List[Band]
-    coarse_step_mhz: float = 5.0
+    coarse_step_mhz: float = 2.0
     fine_step_mhz: float = 0.1
     fine_window_mhz: float = 5.0
     top_k: int = 5

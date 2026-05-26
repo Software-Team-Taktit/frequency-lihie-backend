@@ -16,7 +16,7 @@ scanner = FrequencyScanner(prop_factory)
 
 config = CoarseFineScanConfig(
     bands=[Band(0.0, 0.0)],  
-    coarse_step_mhz=1.0,       
+    coarse_step_mhz=2.0,       
     fine_step_mhz=0.1,         
     fine_window_mhz=2.0,
     top_k=10,

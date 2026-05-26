@@ -58,11 +58,28 @@ def format_power_phrase(tx_power_dbm: float | None) -> str:
 def synthesize(text: str, out_path: str):
     processor = AutoProcessor.from_pretrained(MODEL_ID)
     model = VitsModel.from_pretrained(MODEL_ID)
-    inputs = processor(text = text, return_tensors = "pt")
+
+    inputs = processor(text=text, return_tensors="pt")
+
     with torch.no_grad():
         wav = model(**inputs).waveform.squeeze().cpu().numpy()
+
+    # Remove tiny DC offset
+    wav = wav - wav.mean()
+
+    # Increase perceived loudness using RMS normalization
+    target_rms = 0.75
+    current_rms = float((wav ** 2).mean() ** 0.5)
+
+    if current_rms > 0:
+        wav = wav * (target_rms / current_rms)
+
+    # Safety limiter to avoid broken/distorted WAV values
+    wav = wav.clip(-0.98, 0.98)
+
     ensure_dirs(out_path)
-    sf.write(out_path, wav, 16000)
+
+    sf.write(out_path, wav, 16000, subtype="PCM_16")
     
 def connect_to_rabbitmq(max_retries: int = 30, delay_seconds: int = 2):
     last_error = None

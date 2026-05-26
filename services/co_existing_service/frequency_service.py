@@ -102,7 +102,7 @@ class FrequencyService:
 
         if best_freq is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"לא הצלחנו למצוא תדר מתאים בתוך הטווח המאושר ({min_mhz}-{max_mhz} MHz).",
             )
             

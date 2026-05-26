@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from fastapi import Depends, HTTPException
 from starlette import status
 
@@ -100,7 +102,10 @@ async def update_mission(
     updated_data.update(payload.model_dump(exclude_unset=True))
     updated_data["id"] = item_id
     updated_data["owner_id"] = existing.owner_id
-
+    updated_data["is_active"] = True
+    updated_data["deactivated_at"] = None
+    updated_data["expires_at"] = utc_now() + timedelta(hours=updated_data["time"])
+    
     updated_mission = Mission(**updated_data)
     updated = await repo.update_item(item_id, updated_mission)
 
@@ -109,6 +114,13 @@ async def update_mission(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="failed to update Mission",
         )
+    
+    freq_hz = updated.freq_mhz * 1e6
+    publish_tts_result(
+        is_freq=True,
+        freq_hz=freq_hz,
+        tx_power_dbm=float(updated.tx_power_dbm),
+    )
 
     return updated.model_dump()
 
